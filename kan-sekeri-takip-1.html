@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kan Şekeri Takip</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f0e8;
+      --card: #fffdf8;
+      --ink: #1a1209;
+      --muted: #7a6e5f;
+      --low: #e84040;
+      --normal: #2ecc71;
+      --high: #e67e22;
+      --very-high: #c0392b;
+      --accent: #3b6bca;
+      --accent-light: #dce8ff;
+      --border: #e0d8c8;
+      --shadow: 0 4px 24px rgba(60,40,10,0.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); font-family: 'Nunito', sans-serif; color: var(--ink); min-height: 100vh; padding: 0 0 80px; }
+
+    /* HEADER */
+    header { background: var(--ink); color: #fff; padding: 28px 32px 24px; position: relative; overflow: hidden; }
+    header::before { content: ''; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; background: radial-gradient(circle, rgba(59,107,202,.35) 0%, transparent 70%); pointer-events: none; }
+    header h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; letter-spacing: -.5px; position: relative; }
+    header h1 span { color: #f0b04a; }
+    header p { color: #b0a898; font-size: .9rem; margin-top: 4px; position: relative; }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 20px 20px 0; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 14px; text-align: center; box-shadow: var(--shadow); }
+    .stat-card .val { font-family: 'DM Mono', monospace; font-size: 1.55rem; font-weight: 500; line-height: 1; }
+    .stat-card .lbl { font-size: .72rem; color: var(--muted); margin-top: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ALERT BANNER */
+    #alertBanner {
+      margin: 18px 20px 0;
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: none;
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+      position: relative;
+      overflow: hidden;
+    }
+    #alertBanner.danger { background: #fff0f0; border: 2px solid #e84040; }
+    #alertBanner.warning { background: #fff8ed; border: 2px solid #e67e22; }
+    @keyframes popIn { from { opacity:0; transform:scale(.94) translateY(-8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .alert-icon { font-size: 2rem; margin-bottom: 6px; }
+    .alert-title { font-family: 'DM Serif Display', serif; font-size: 1.15rem; margin-bottom: 10px; }
+    .alert-title.danger { color: #c0392b; }
+    .alert-title.warning { color: #d35400; }
+    .alert-steps { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .alert-steps li { display: flex; align-items: flex-start; gap: 8px; font-size: .88rem; line-height: 1.4; }
+    .alert-steps li::before { content: '→'; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+    .alert-steps li.danger::before { color: #e84040; }
+    .alert-steps li.warning::before { color: #e67e22; }
+    .alert-dismiss { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #aaa; }
+    .alert-dismiss:hover { color: #555; }
+
+    /* SETTINGS */
+    .settings-wrap { margin: 18px 20px 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); }
+    .settings-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    .settings-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; }
+    .settings-toggle { font-size: .85rem; color: var(--accent); font-weight: 700; }
+    .settings-body { display: none; margin-top: 16px; }
+    .settings-body.open { display: block; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .settings-group { display: flex; flex-direction: column; gap: 5px; }
+    .settings-group label { font-size: .8rem; font-weight: 700; color: var(--muted); }
+    .settings-group input { border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: .95rem; background: var(--bg); color: var(--ink); outline: none; transition: border .2s; }
+    .settings-group input:focus { border-color: var(--accent); background: #fff; }
+    .range-preview { margin-top: 12px; background: var(--bg); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .range-badge { font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+    .range-badge.low { background: #fde8e8; color: var(--low); }
+    .range-badge.normal { background: #e4f9ee; color: #1e9a53; }
+    .range-badge.high { background: #fef0e0; color: var(--high); }
+    .range-badge.very-high { background: #fde8e8; color: var(--very-high); }
+    .btn-save-settings { margin-top: 14px; width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 11px; font-family: 'Nunito', sans-serif; font-size: .95rem; font-weight: 800; cursor: pointer; transition: background .2s; }
+    .btn-save-settings:hover { background: #2a52a8; }
+
+    /* FORM */
+    .form-wrap { margin: 18px 20px 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px; box-shadow: var(--shadow); }
+    .form-wrap h2 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: .8rem; font-weight: 700; color: var(--muted); letter-spacing: .3px; }
+    input, select, textarea { border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: 'Nunito', sans-serif; font-size: .95rem; background: var(--bg); color: var(--ink); transition: border .2s; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+    textarea { resize: none; height: 64px; }
+    .btn-add { grid-column: 1 / -1; margin-top: 4px; background: var(--ink); color: #fff; border: none; border-radius: 12px; padding: 13px; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800; cursor: pointer; transition: background .2s, transform .1s; }
+    .btn-add:active { transform: scale(.97); }
+    .btn-add:hover { background: #2c1e0a; }
+
+    /* CHART */
+    .chart-wrap { margin: 18px 20px 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 22px 16px 10px; box-shadow: var(--shadow); }
+    .chart-wrap h2 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 16px; padding-left: 6px; }
+    #chartCanvas { width: 100%; height: 180px; display: block; }
+
+    /* LIST */
+    .list-wrap { margin: 18px 20px 0; }
+    .list-wrap h2 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 12px; }
+    #recordList { display: flex; flex-direction: column; gap: 10px; }
+    .record-item { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); animation: fadeSlide .35s ease; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .badge { min-width: 62px; height: 62px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 500; }
+    .badge .mg { font-size: 1.25rem; line-height: 1; }
+    .badge .unit { font-size: .65rem; opacity: .75; }
+    .badge.low { background: #fde8e8; color: var(--low); }
+    .badge.normal { background: #e4f9ee; color: #1e9a53; }
+    .badge.high { background: #fef0e0; color: var(--high); }
+    .badge.very-high { background: #fde8e8; color: var(--very-high); }
+    .record-info { flex: 1; min-width: 0; }
+    .record-info .ri-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tag { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+    .record-info .ri-time { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+    .record-info .ri-note { font-size: .8rem; color: #888; margin-top: 3px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 1.1rem; padding: 4px; transition: color .2s; }
+    .btn-del:hover { color: var(--low); }
+    .empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: .9rem; }
+
+    /* LEGEND */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 20px 0; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: .73rem; color: var(--muted); font-weight: 700; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Kan <span>Şekeri</span> Takip</h1>
+  <p>Günlük ölçümlerinizi kaydedin, sınırları belirleyin, uyarıları alın</p>
+</header>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="val" id="statAvg">—</div>
+    <div class="lbl">Ortalama</div>
+  </div>
+  <div class="stat-card">
+    <div class="val" id="statMin" style="color:var(--low)">—</div>
+    <div class="lbl">En Düşük</div>
+  </div>
+  <div class="stat-card">
+    <div class="val" id="statMax" style="color:var(--high)">—</div>
+    <div class="lbl">En Yüksek</div>
+  </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div id="alertBanner">
+  <button class="alert-dismiss" onclick="dismissAlert()">✕</button>
+  <div class="alert-icon" id="alertIcon"></div>
+  <div class="alert-title" id="alertTitle"></div>
+  <ul class="alert-steps" id="alertSteps"></ul>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-wrap">
+  <div class="settings-header" onclick="toggleSettings()">
+    <h2>⚙️ Kişisel Sınırlarım</h2>
+    <span class="settings-toggle" id="settingsToggleBtn">Düzenle ▾</span>
+  </div>
+  <div class="settings-body" id="settingsBody">
+    <div class="settings-grid">
+      <div class="settings-group">
+        <label>🔴 Alt Sınır (Düşük) mg/dL</label>
+        <input type="number" id="setLow" placeholder="70" />
+      </div>
+      <div class="settings-group">
+        <label>🟡 Üst Sınır (Yüksek) mg/dL</label>
+        <input type="number" id="setHigh" placeholder="140" />
+      </div>
+      <div class="settings-group">
+        <label>🔴 Çok Yüksek Başlangıcı mg/dL</label>
+        <input type="number" id="setVeryHigh" placeholder="200" />
+      </div>
+    </div>
+    <div class="range-preview" id="rangePreview"></div>
+    <button class="btn-save-settings" onclick="saveSettings()">✓ Sınırları Kaydet</button>
+  </div>
+</div>
+
+<!-- FORM -->
+<div class="form-wrap">
+  <h2>Yeni Ölçüm Ekle</h2>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Kan Şekeri (mg/dL)</label>
+      <input type="number" id="inputVal" placeholder="ör: 98" min="20" max="600" />
+    </div>
+    <div class="form-group">
+      <label>Ölçüm Zamanı</label>
+      <select id="inputTime">
+        <option value="Aç Karnına">Aç Karnına</option>
+        <option value="Yemek Öncesi">Yemek Öncesi</option>
+        <option value="Yemek Sonrası">Yemek Sonrası</option>
+        <option value="Uyku Öncesi">Uyku Öncesi</option>
+        <option value="Rastgele">Rastgele</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tarih</label>
+      <input type="date" id="inputDate" />
+    </div>
+    <div class="form-group">
+      <label>Saat</label>
+      <input type="time" id="inputHour" />
+    </div>
+    <div class="form-group full">
+      <label>Not (isteğe bağlı)</label>
+      <textarea id="inputNote" placeholder="Örn: Öğleden sonra yürüyüş yaptım..."></textarea>
+    </div>
+    <button class="btn-add" onclick="addRecord()">＋ Kaydet</button>
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="chart-wrap">
+  <h2>Son 14 Gün Grafiği</h2>
+  <canvas id="chartCanvas"></canvas>
+</div>
+
+<!-- LEGEND -->
+<div class="legend" id="legendEl"></div>
+
+<!-- LIST -->
+<div class="list-wrap">
+  <h2>Kayıtlar</h2>
+  <div id="recordList"><div class="empty">Henüz kayıt yok. İlk ölçümünüzü ekleyin!</div></div>
+</div>
+
+<script>
+  // ── STORAGE ──
+  let records = JSON.parse(localStorage.getItem('ks_records') || '[]');
+  let limits = JSON.parse(localStorage.getItem('ks_limits') || 'null') || { low: 70, high: 140, veryHigh: 200 };
+
+  function save() { localStorage.setItem('ks_records', JSON.stringify(records)); }
+  function saveLimits() { localStorage.setItem('ks_limits', JSON.stringify(limits)); }
+
+  // ── LEVEL HELPERS ──
+  function levelOf(v) {
+    if (v < limits.low) return 'low';
+    if (v <= limits.high) return 'normal';
+    if (v <= limits.veryHigh) return 'high';
+    return 'very-high';
+  }
+  function labelOf(v) {
+    if (v < limits.low) return 'Düşük';
+    if (v <= limits.high) return 'Normal';
+    if (v <= limits.veryHigh) return 'Yüksek';
+    return 'Çok Yüksek';
+  }
+  function colorOf(v) {
+    const s = getComputedStyle(document.documentElement);
+    if (v < limits.low) return s.getPropertyValue('--low').trim();
+    if (v <= limits.high) return '#2ecc71';
+    if (v <= limits.veryHigh) return s.getPropertyValue('--high').trim();
+    return s.getPropertyValue('--very-high').trim();
+  }
+
+  // ── ALERT SYSTEM ──
+  const ADVICE = {
+    low: {
+      icon: '🚨',
+      cls: 'danger',
+      title: 'UYARI: Kan Şekeriniz Çok Düşük (Hipoglisemi)',
+      steps: [
+        { text: 'Hemen 15–20 g hızlı karbonhidrat tüketin: 4–5 glikoz tableti, yarım bardak meyve suyu veya 3–4 tane şeker.', cls: 'danger' },
+        { text: '15 dakika bekleyin, ardından şekerinizi tekrar ölçün.', cls: 'danger' },
+        { text: 'Hâlâ düşükse yukarıdaki adımı tekrarlayın.', cls: 'danger' },
+        { text: 'Şekeriniz normale döndükten sonra hafif bir atıştırmalık (peynir, kraker) yiyin.', cls: 'warning' },
+        { text: 'Baş dönmesi, titreme veya bilinç bulanıklığı varsa hemen 112\'yi arayın.', cls: 'danger' },
+      ]
+    },
+    high: {
+      icon: '⚠️',
+      cls: 'warning',
+      title: 'DİKKAT: Kan Şekeriniz Yüksek (Hiperglisemi)',
+      steps: [
+        { text: 'Bol su için — susuzluk şekeri daha da yükseltir.', cls: 'warning' },
+        { text: 'Şeker, beyaz ekmek, meyve suyu gibi hızlı karbonhidratlardan kaçının.', cls: 'warning' },
+        { text: '15–20 dakikalık hafif yürüyüş veya egzersiz yapın (ilaç almamışsanız).', cls: 'warning' },
+        { text: 'Doktor önerisiyle ilaç/insülin dozunuzu gözden geçirin.', cls: 'warning' },
+        { text: '1–2 saat sonra tekrar ölçün, değer düşmüyorsa doktorunuzu arayın.', cls: 'warning' },
+      ]
+    },
+    veryHigh: {
+      icon: '🚨',
+      cls: 'danger',
+      title: 'ACİL: Kan Şekeriniz Tehlikeli Derecede Yüksek',
+      steps: [
+        { text: `Değeriniz ${limits.veryHigh} mg/dL üzerinde — bu tıbbi acil durum sayılabilir.`, cls: 'danger' },
+        { text: 'Doktorunuzu veya acil servisi (112) hemen arayın.', cls: 'danger' },
+        { text: 'Bol su için; keton kontrolü gerekebilir.', cls: 'danger' },
+        { text: 'Bulantı, kusma, karın ağrısı veya nefes darlığı varsa beklemeden 112\'yi arayın.', cls: 'danger' },
+        { text: 'Egzersiz yapmayın; bu durumda şekeri daha da yükseltebilir.', cls: 'warning' },
+      ]
+    }
+  };
+
+  function showAlert(v) {
+    let data;
+    if (v < limits.low) data = ADVICE.low;
+    else if (v > limits.veryHigh) data = ADVICE.veryHigh;
+    else if (v > limits.high) data = ADVICE.high;
+    else { dismissAlert(); return; }
+
+    const banner = document.getElementById('alertBanner');
+    document.getElementById('alertIcon').textContent = data.icon;
+    const titleEl = document.getElementById('alertTitle');
+    titleEl.textContent = data.title;
+    titleEl.className = 'alert-title ' + data.cls;
+    document.getElementById('alertSteps').innerHTML = data.steps
+      .map(s => `<li class="${s.cls}">${s.text}</li>`).join('');
+    banner.className = data.cls;
+    banner.style.display = 'block';
+    banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // browser notification if permitted
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(data.title, { body: data.steps[0].text, icon: '' });
+    }
+  }
+
+  function dismissAlert() {
+    const b = document.getElementById('alertBanner');
+    b.style.display = 'none';
+  }
+
+  // ── SETTINGS ──
+  function toggleSettings() {
+    const body = document.getElementById('settingsBody');
+    const btn = document.getElementById('settingsToggleBtn');
+    const open = body.classList.toggle('open');
+    btn.textContent = open ? 'Kapat ▴' : 'Düzenle ▾';
+    if (open) {
+      document.getElementById('setLow').value = limits.low;
+      document.getElementById('setHigh').value = limits.high;
+      document.getElementById('setVeryHigh').value = limits.veryHigh;
+      updateRangePreview();
+    }
+  }
+
+  function updateRangePreview() {
+    const lo = parseInt(document.getElementById('setLow').value) || limits.low;
+    const hi = parseInt(document.getElementById('setHigh').value) || limits.high;
+    const vh = parseInt(document.getElementById('setVeryHigh').value) || limits.veryHigh;
+    document.getElementById('rangePreview').innerHTML = `
+      <span class="range-badge low">Düşük &lt; ${lo}</span>
+      <span class="range-badge normal">${lo} – ${hi} Normal</span>
+      <span class="range-badge high">${hi + 1} – ${vh} Yüksek</span>
+      <span class="range-badge very-high">&gt; ${vh} Çok Yüksek</span>
+    `;
+  }
+
+  ['setLow','setHigh','setVeryHigh'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updateRangePreview));
+
+  function saveSettings() {
+    const lo = parseInt(document.getElementById('setLow').value);
+    const hi = parseInt(document.getElementById('setHigh').value);
+    const vh = parseInt(document.getElementById('setVeryHigh').value);
+    if (!lo || !hi || !vh || lo >= hi || hi >= vh) {
+      alert('Lütfen geçerli sınırlar girin: Alt < Yüksek < Çok Yüksek');
+      return;
+    }
+    limits = { low: lo, high: hi, veryHigh: vh };
+    saveLimits();
+    toggleSettings();
+    render();
+    alert('✓ Sınırlar kaydedildi!');
+  }
+
+  // ── INIT ──
+  (function() {
+    const now = new Date();
+    document.getElementById('inputDate').value = now.toISOString().slice(0, 10);
+    document.getElementById('inputHour').value = now.toTimeString().slice(0, 5);
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  })();
+
+  // ── ADD ──
+  function addRecord() {
+    const v = parseFloat(document.getElementById('inputVal').value);
+    if (!v || v < 20 || v > 600) { alert('Lütfen geçerli bir değer girin (20–600 mg/dL)'); return; }
+    const rec = {
+      id: Date.now(),
+      value: v,
+      timing: document.getElementById('inputTime').value,
+      date: document.getElementById('inputDate').value,
+      hour: document.getElementById('inputHour').value,
+      note: document.getElementById('inputNote').value.trim()
+    };
+    records.unshift(rec);
+    save();
+    document.getElementById('inputVal').value = '';
+    document.getElementById('inputNote').value = '';
+    render();
+    showAlert(v);
+  }
+
+  // ── DELETE ──
+  function deleteRecord(id) {
+    records = records.filter(r => r.id !== id);
+    save();
+    render();
+  }
+
+  // ── STATS ──
+  function renderStats() {
+    if (!records.length) {
+      ['statAvg','statMin','statMax'].forEach(id => document.getElementById(id).textContent = '—');
+      return;
+    }
+    const vals = records.map(r => r.value);
+    document.getElementById('statAvg').textContent = Math.round(vals.reduce((a,b) => a+b,0) / vals.length);
+    document.getElementById('statMin').textContent = Math.min(...vals);
+    document.getElementById('statMax').textContent = Math.max(...vals);
+  }
+
+  // ── LEGEND ──
+  function renderLegend() {
+    document.getElementById('legendEl').innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div> Düşük (&lt;${limits.low})</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--normal)"></div> Normal (${limits.low}–${limits.high})</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div> Yüksek (${limits.high}–${limits.veryHigh})</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--very-high)"></div> Çok Yüksek (&gt;${limits.veryHigh})</div>
+    `;
+  }
+
+  // ── CHART ──
+  function renderChart() {
+    const canvas = document.getElementById('chartCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+    canvas.height = 180 * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const W = canvas.offsetWidth, H = 180;
+    ctx.clearRect(0, 0, W, H);
+
+    const today = new Date();
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0,10);
+      const dayRecs = records.filter(r => r.date === key);
+      const avg = dayRecs.length ? Math.round(dayRecs.reduce((a,b)=>a+b.value,0)/dayRecs.length) : null;
+      days.push({ label: key.slice(5), value: avg });
+    }
+
+    const pad = { left: 42, right: 16, top: 16, bottom: 28 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top - pad.bottom;
+    const vals = days.map(d=>d.value).filter(v=>v!==null);
+    const minV = vals.length ? Math.max(0, Math.min(...vals, limits.low) - 20) : 50;
+    const maxV = vals.length ? Math.max(...vals, limits.veryHigh) + 20 : 240;
+
+    function xOf(i) { return pad.left + (i / (days.length - 1)) * chartW; }
+    function yOf(v) { return pad.top + chartH - ((v - minV) / (maxV - minV)) * chartH; }
+
+    // colored zone bands
+    const zones = [
+      { from: minV, to: limits.low, color: 'rgba(232,64,64,.07)' },
+      { from: limits.low, to: limits.high, color: 'rgba(46,204,113,.07)' },
+      { from: limits.high, to: limits.veryHigh, color: 'rgba(230,126,34,.07)' },
+      { from: limits.veryHigh, to: maxV, color: 'rgba(192,57,43,.09)' },
+    ];
+    zones.forEach(z => {
+      const y1 = yOf(Math.min(z.to, maxV));
+      const y2 = yOf(Math.max(z.from, minV));
+      ctx.fillStyle = z.color;
+      ctx.fillRect(pad.left, y1, chartW, y2 - y1);
+    });
+
+    // threshold lines
+    ctx.lineWidth = 1;
+    [{ v: limits.low, c:'#e84040' }, { v: limits.high, c:'#e67e22' }, { v: limits.veryHigh, c:'#c0392b' }].forEach(t => {
+      if (t.v >= minV && t.v <= maxV) {
+        ctx.strokeStyle = t.c + '99';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(pad.left, yOf(t.v)); ctx.lineTo(W - pad.right, yOf(t.v)); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = t.c;
+        ctx.font = 'bold 9px DM Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(t.v, 2, yOf(t.v) + 3);
+      }
+    });
+
+    // line + fill
+    const pts = days.map((d, i) => d.value !== null ? {x: xOf(i), y: yOf(d.value), v: d.value} : null);
+    const connected = pts.filter(Boolean);
+    if (connected.length > 1) {
+      const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+      grad.addColorStop(0, 'rgba(59,107,202,.15)');
+      grad.addColorStop(1, 'rgba(59,107,202,0)');
+      ctx.beginPath();
+      let first = true;
+      pts.forEach(p => { if (!p) return; if (first) { ctx.moveTo(p.x, p.y); first = false; } else ctx.lineTo(p.x, p.y); });
+      const last = pts.filter(Boolean).slice(-1)[0];
+      const fst = pts.filter(Boolean)[0];
+      ctx.lineTo(last.x, H - pad.bottom); ctx.lineTo(fst.x, H - pad.bottom);
+      ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+      ctx.beginPath(); first = true;
+      pts.forEach(p => { if (!p) { first = true; return; } if (first) { ctx.moveTo(p.x, p.y); first = false; } else ctx.lineTo(p.x, p.y); });
+      ctx.strokeStyle = '#3b6bca'; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.stroke();
+    }
+    pts.forEach(p => {
+      if (!p) return;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = colorOf(p.v); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    ctx.fillStyle = '#aaa'; ctx.font = '9px Nunito, sans-serif'; ctx.textAlign = 'center';
+    days.forEach((d, i) => { if (i % 2 === 0) ctx.fillText(d.label, xOf(i), H - 4); });
+  }
+
+  // ── LIST ──
+  function renderList() {
+    const el = document.getElementById('recordList');
+    if (!records.length) { el.innerHTML = '<div class="empty">Henüz kayıt yok. İlk ölçümünüzü ekleyin!</div>'; return; }
+    el.innerHTML = records.slice(0, 50).map(r => `
+      <div class="record-item">
+        <div class="badge ${levelOf(r.value)}">
+          <div class="mg">${r.value}</div>
+          <div class="unit">mg/dL</div>
+        </div>
+        <div class="record-info">
+          <div class="ri-top">
+            <span class="tag">${r.timing}</span>
+            <span style="font-size:.75rem;font-weight:700;color:${colorOf(r.value)}">${labelOf(r.value)}</span>
+          </div>
+          <div class="ri-time">${r.date} · ${r.hour}</div>
+          ${r.note ? `<div class="ri-note">${r.note}</div>` : ''}
+        </div>
+        <button class="btn-del" onclick="deleteRecord(${r.id})" title="Sil">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function render() { renderStats(); renderLegend(); renderChart(); renderList(); }
+  render();
+  window.addEventListener('resize', renderChart);
+</script>
+</body>
+</html>
