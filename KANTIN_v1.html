@@ -1,0 +1,2774 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KANTİN YÖNETİM SİSTEMİ v1 — NEON</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#080c18;
+  --bg2:#0d1230;
+  --surface:rgba(15,23,50,.85);
+  --surface2:rgba(20,30,65,.7);
+  --border:rgba(0,240,255,.12);
+  --border2:rgba(0,240,255,.25);
+  --text:#f0f4ff;
+  --text2:#c8d8e8;
+  --text3:#a0b4c8;
+  --primary:#00f0ff;
+  --primary-h:#00d0e0;
+  --primary-dim:rgba(0,240,255,.08);
+  --green:#00ff41;--green-dim:rgba(0,255,65,.08);--green-h:#00e03a;
+  --red:#ff0044;--red-dim:rgba(255,0,68,.08);--red-h:#e0003a;
+  --amber:#ffd700;--amber-dim:rgba(255,215,0,.08);
+  --purple:#bf40ff;--purple-dim:rgba(191,64,255,.08);
+  --cyan:#00e5ff;--cyan-dim:rgba(0,229,255,.08);
+  --orange:#ff6600;--orange-dim:rgba(255,102,0,.08);
+  --pink:#ff1493;--pink-dim:rgba(255,20,147,.08);
+  --glow-cyan:0 0 15px rgba(0,240,255,.3),0 0 40px rgba(0,240,255,.1);
+  --glow-green:0 0 15px rgba(0,255,65,.3),0 0 40px rgba(0,255,65,.1);
+  --glow-red:0 0 15px rgba(255,0,68,.3),0 0 40px rgba(255,0,68,.1);
+  --glow-amber:0 0 15px rgba(255,215,0,.3),0 0 40px rgba(255,215,0,.1);
+  --glow-purple:0 0 15px rgba(191,64,255,.3),0 0 40px rgba(191,64,255,.1);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.4);
+  --shadow:0 4px 20px rgba(0,0,0,.5),0 0 40px rgba(0,240,255,.03);
+  --shadow-lg:0 10px 40px rgba(0,0,0,.6),0 0 60px rgba(0,240,255,.05);
+  --radius:14px;--radius-sm:9px;--radius-xs:6px;
+  --neon-border:1px solid rgba(0,240,255,.15);
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;min-height:100vh;background-image:radial-gradient(ellipse at 20% 50%,rgba(0,240,255,.03) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(191,64,255,.03) 0%,transparent 60%);background-attachment:fixed;}
+
+/* ── LAYOUT ── */
+.app-shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;min-height:100vh;}
+.top-bar{grid-column:1/-1;background:rgba(8,12,24,.92);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;height:56px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);}
+.sidebar{background:rgba(10,15,30,.85);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;backdrop-filter:blur(12px);}
+.main-content{padding:20px;overflow-y:auto;}
+
+/* ── TOP BAR ── */
+.tb-logo{display:flex;align-items:center;gap:10px;}
+.tb-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;box-shadow:var(--glow-cyan);}
+.tb-logo h1{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;text-shadow:0 0 20px rgba(0,240,255,.3);}
+.tb-logo p{font-size:10px;color:var(--primary);letter-spacing:.3px;text-transform:uppercase;text-shadow:0 0 10px rgba(0,240,255,.2);}
+.tb-period{background:var(--primary-dim);border:1px solid rgba(0,240,255,.2);border-radius:var(--radius-xs);padding:4px 12px;font-size:12px;font-weight:700;color:var(--primary);margin-left:auto;text-shadow:0 0 8px rgba(0,240,255,.3);}
+.tb-actions{display:flex;align-items:center;gap:8px;}
+.tb-badge{display:flex;align-items:center;gap:5px;background:rgba(15,23,50,.6);border:var(--neon-border);border-radius:var(--radius-xs);padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);}
+.tb-badge.ok{color:var(--green);background:var(--green-dim);border-color:rgba(0,255,65,.2);text-shadow:0 0 8px rgba(0,255,65,.3);}
+.tb-badge.warn{color:var(--amber);background:var(--amber-dim);border-color:rgba(255,215,0,.2);text-shadow:0 0 8px rgba(255,215,0,.3);}
+
+/* ── SIDEBAR ── */
+.nav-section-title{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:all .2s;border:1px solid transparent;white-space:nowrap;}
+.nav-item:hover{background:rgba(0,240,255,.05);color:var(--primary);border-color:rgba(0,240,255,.1);}
+.nav-item.active{background:var(--primary-dim);color:var(--primary);border-color:rgba(0,240,255,.2);box-shadow:inset 0 0 20px rgba(0,240,255,.05);text-shadow:0 0 10px rgba(0,240,255,.3);}
+.nav-item .ni{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-item .nbadge{margin-left:auto;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center;box-shadow:0 0 10px rgba(255,0,68,.4);}
+.nav-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:8px 0;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.page-header h2{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.4px;text-shadow:0 0 25px rgba(0,240,255,.15);}
+.page-header p{font-size:11px;color:var(--text3);margin-top:2px;}
+.ph-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm);backdrop-filter:blur(8px);transition:border-color .3s,box-shadow .3s;}
+.card:hover{border-color:rgba(0,240,255,.2);box-shadow:var(--shadow-sm),0 0 20px rgba(0,240,255,.03);}
+.card-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.card-title .ct-accent{width:3px;height:14px;border-radius:2px;}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s;}
+.kpi:hover{border-color:rgba(0,240,255,.25);box-shadow:var(--shadow-sm),0 0 25px rgba(0,240,255,.05);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--radius) var(--radius) 0 0;}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;border-radius:0 0 var(--radius) var(--radius);opacity:.4;}
+.kpi.kpi-blue::before{background:var(--primary);box-shadow:0 0 15px var(--primary);}
+.kpi.kpi-blue::after{background:linear-gradient(90deg,transparent,var(--primary),transparent);}
+.kpi.kpi-green::before{background:var(--green);box-shadow:0 0 15px var(--green);}
+.kpi.kpi-green::after{background:linear-gradient(90deg,transparent,var(--green),transparent);}
+.kpi.kpi-red::before{background:var(--red);box-shadow:0 0 15px var(--red);}
+.kpi.kpi-red::after{background:linear-gradient(90deg,transparent,var(--red),transparent);}
+.kpi.kpi-amber::before{background:var(--amber);box-shadow:0 0 15px var(--amber);}
+.kpi.kpi-amber::after{background:linear-gradient(90deg,transparent,var(--amber),transparent);}
+.kpi.kpi-purple::before{background:var(--purple);box-shadow:0 0 15px var(--purple);}
+.kpi.kpi-purple::after{background:linear-gradient(90deg,transparent,var(--purple),transparent);}
+.kpi.kpi-cyan::before{background:var(--cyan);box-shadow:0 0 15px var(--cyan);}
+.kpi.kpi-cyan::after{background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
+.kpi .kpi-icon{font-size:22px;margin-bottom:8px;filter:drop-shadow(0 0 6px rgba(0,240,255,.3));}
+.kpi .kpi-val{font-family:var(--font-mono);font-size:22px;font-weight:600;color:#fff;letter-spacing:-.5px;line-height:1;}
+.kpi .kpi-lbl{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:5px;}
+.kpi .kpi-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+.kpi .kpi-trend{font-size:10px;font-weight:700;margin-top:4px;}
+.kpi .kpi-trend.up{color:var(--green);text-shadow:0 0 8px rgba(0,255,65,.3);}
+.kpi .kpi-trend.dn{color:var(--red);text-shadow:0 0 8px rgba(255,0,68,.3);}
+
+/* ── BUTTONS ── */
+.btn{border:1px solid transparent;border-radius:var(--radius-sm);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.2px;padding:8px 16px;transition:all .25s;display:inline-flex;align-items:center;gap:6px;position:relative;overflow:hidden;}
+.btn::after{content:'';position:absolute;inset:-2px;border-radius:inherit;opacity:0;transition:opacity .3s;z-index:-1;}
+.btn-primary{background:var(--primary);color:#080c18;border-color:var(--primary);box-shadow:0 0 12px rgba(0,240,255,.3);}
+.btn-primary:hover{background:var(--primary-h);box-shadow:0 0 25px rgba(0,240,255,.5),inset 0 0 15px rgba(255,255,255,.05);transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);box-shadow:0 0 10px rgba(0,240,255,.3);}
+.btn-success{background:var(--green);color:#080c18;border-color:var(--green);box-shadow:0 0 12px rgba(0,255,65,.3);}
+.btn-success:hover{background:var(--green-h);box-shadow:0 0 25px rgba(0,255,65,.5);transform:translateY(-1px);}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 0 12px rgba(255,0,68,.3);}
+.btn-danger:hover{background:var(--red-h);box-shadow:0 0 25px rgba(255,0,68,.5);transform:translateY(-1px);}
+.btn-ghost{background:rgba(0,240,255,.03);color:var(--text2);border-color:rgba(0,240,255,.15);}
+.btn-ghost:hover{background:rgba(0,240,255,.08);color:var(--primary);border-color:rgba(0,240,255,.3);box-shadow:0 0 15px rgba(0,240,255,.1);}
+.btn-amber{background:var(--amber);color:#080c18;border-color:var(--amber);box-shadow:0 0 12px rgba(255,215,0,.3);}
+.btn-amber:hover{background:#ecc700;box-shadow:0 0 25px rgba(255,215,0,.5);transform:translateY(-1px);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-xs{padding:3px 7px;font-size:10px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;}
+
+/* ── FORMS ── */
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fgg{display:flex;flex-direction:column;gap:4px;}
+.fgg label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+.fgg input,.fgg select,.fgg textarea{background:rgba(10,15,35,.8);border:1px solid rgba(0,240,255,.15);border-radius:var(--radius-xs);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;padding:7px 10px;transition:border-color .2s,box-shadow .2s;width:100%;}
+.fgg input:focus,.fgg select:focus,.fgg textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 12px rgba(0,240,255,.15);}
+.fgg select option{background:var(--bg);}
+.fgg input[readonly]{background:rgba(10,15,35,.4);color:var(--text2);}
+.fgg input.hi{color:var(--green);font-weight:700;background:var(--green-dim);box-shadow:0 0 8px rgba(0,255,65,.1);}
+.fgg input.err{color:var(--red);background:var(--red-dim);border-color:var(--red);box-shadow:0 0 8px rgba(255,0,68,.15);}
+
+/* ── TABLES ── */
+.tw{overflow-x:auto;}
+table.dt{width:100%;border-collapse:collapse;font-size:12px;}
+.dt thead th{background:rgba(0,240,255,.04);border-bottom:2px solid rgba(0,240,255,.1);color:var(--primary);font-size:10px;font-weight:700;letter-spacing:.5px;padding:8px 10px;text-align:left;text-transform:uppercase;white-space:nowrap;position:sticky;top:0;text-shadow:0 0 8px rgba(0,240,255,.15);}
+.dt thead th.tc{text-align:center;}
+.dt tbody td{border-bottom:1px solid rgba(0,240,255,.06);color:var(--text);padding:9px 10px;vertical-align:middle;}
+.dt tbody td.tc{text-align:center;}
+.dt tbody td.tr{text-align:right;}
+.dt tbody tr:hover td{background:rgba(0,240,255,.03);}
+.dt tfoot td{background:rgba(0,240,255,.04);border-top:2px solid rgba(0,240,255,.1);font-weight:700;color:var(--text);padding:9px 10px;}
+.dt tfoot td.tr{text-align:right;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;letter-spacing:.2px;color:#f0f4ff!important;}
+.badge-green{background:var(--green-dim);color:#00ff41!important;border:1px solid rgba(0,255,65,.15);text-shadow:0 0 6px rgba(0,255,65,.5);}
+.badge-red{background:var(--red-dim);color:#ff0044!important;border:1px solid rgba(255,0,68,.15);text-shadow:0 0 6px rgba(255,0,68,.5);}
+.badge-amber{background:var(--amber-dim);color:#ffd700!important;border:1px solid rgba(255,215,0,.15);text-shadow:0 0 6px rgba(255,215,0,.5);}
+.badge-blue{background:var(--primary-dim);color:#00f0ff!important;border:1px solid rgba(0,240,255,.15);text-shadow:0 0 6px rgba(0,240,255,.5);}
+.badge-gray{background:rgba(15,23,50,.4);color:#a0b4c8;border:1px solid rgba(0,240,255,.08);}
+.badge-purple{background:var(--purple-dim);color:#bf40ff!important;border:1px solid rgba(191,64,255,.15);text-shadow:0 0 6px rgba(191,64,255,.5);}
+.badge-pink{background:var(--pink-dim);color:#ff1493!important;border:1px solid rgba(255,20,147,.15);text-shadow:0 0 6px rgba(255,20,147,.5);}
+.badge-icecek{background:var(--cyan-dim);color:#00e5ff!important;border:1px solid rgba(0,229,255,.15);text-shadow:0 0 6px rgba(0,229,255,.5);}
+.badge-yiyecek{background:var(--green-dim);color:#00ff41!important;border:1px solid rgba(0,255,65,.15);text-shadow:0 0 6px rgba(0,255,65,.5);}
+.badge-sigara{background:var(--red-dim);color:#ff0044!important;border:1px solid rgba(255,0,68,.15);text-shadow:0 0 6px rgba(255,0,68,.5);}
+.badge-temizlik{background:var(--purple-dim);color:#bf40ff!important;border:1px solid rgba(191,64,255,.15);text-shadow:0 0 6px rgba(191,64,255,.5);}
+.badge-kirtasiye{background:var(--amber-dim);color:#ffd700!important;border:1px solid rgba(255,215,0,.15);text-shadow:0 0 6px rgba(255,215,0,.5);}
+.badge-diger{background:var(--pink-dim);color:#ff1493!important;border:1px solid rgba(255,20,147,.15);text-shadow:0 0 6px rgba(255,20,147,.5);}
+
+/* ── TABS ── */
+.tp{display:none;}.tp.active{display:block;}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(4,6,16,.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.modal{background:rgba(10,15,35,.95);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;backdrop-filter:blur(12px);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
+.modal-header h3{font-size:15px;font-weight:800;color:#fff;text-shadow:0 0 15px rgba(0,240,255,.15);}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);line-height:1;padding:2px 6px;border-radius:4px;transition:color .2s;}
+.modal-close:hover{background:rgba(0,240,255,.05);color:var(--primary);}
+.modal-body{padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ── ALERT ── */
+.alert{border-radius:var(--radius-sm);font-size:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;}
+.alert-info{background:var(--primary-dim);border:1px solid rgba(0,240,255,.15);color:var(--primary);}
+.alert-warn{background:var(--amber-dim);border:1px solid rgba(255,215,0,.15);color:var(--amber);}
+.alert-danger{background:var(--red-dim);border:1px solid rgba(255,0,68,.15);color:var(--red);}
+.alert-success{background:var(--green-dim);border:1px solid rgba(0,255,65,.15);color:var(--green);}
+
+/* ── GRID LAYOUTS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.grid-60-40{display:grid;grid-template-columns:3fr 2fr;gap:16px;}
+.mb16{margin-bottom:16px;}
+.mt12{margin-top:12px;}
+.mt8{margin-top:8px;}
+.border-primary{border-color:var(--primary)!important;}
+
+/* ── STOK RENK BARS ── */
+.stok-bar{height:6px;border-radius:3px;background:rgba(0,240,255,.08);overflow:hidden;margin-top:4px;}
+.stok-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+
+/* ── POS ── */
+.pos-grid{display:grid;grid-template-columns:1fr 360px;gap:16px;height:calc(100vh - 56px - 40px);}
+.pos-products{overflow-y:auto;}
+.pos-cart{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;height:100%;overflow:hidden;backdrop-filter:blur(8px);}
+.pos-cart-header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:space-between;color:#fff;}
+.pos-cart-items{flex:1;overflow-y:auto;padding:10px;}
+.pos-cart-footer{padding:14px 16px;border-top:1px solid var(--border);}
+.pos-cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.pos-cat-btn{background:rgba(10,15,35,.6);border:1px solid rgba(0,240,255,.12);border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;padding:5px 12px;transition:all .2s;color:var(--text2);}
+.pos-cat-btn:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 0 12px rgba(0,240,255,.1);}
+.pos-cat-btn.active{background:var(--primary);color:#080c18;border-color:var(--primary);box-shadow:0 0 15px rgba(0,240,255,.3);}
+.pos-prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+.pos-prod{background:rgba(10,15,35,.6);border:1px solid rgba(0,240,255,.1);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;transition:all .2s;user-select:none;}
+.pos-prod:hover{border-color:var(--primary);box-shadow:0 0 20px rgba(0,240,255,.1);transform:translateY(-2px);}
+.pos-prod:active{transform:scale(.96);}
+.pos-prod.out{opacity:.3;cursor:not-allowed;}
+.pos-prod-icecek{background:rgba(0,229,255,.08);}
+.pos-prod-icecek:hover{border-color:#00e5ff;box-shadow:0 0 20px rgba(0,229,255,.15);}
+.pos-prod-yiyecek{background:rgba(0,255,65,.08);}
+.pos-prod-yiyecek:hover{border-color:#00ff41;box-shadow:0 0 20px rgba(0,255,65,.15);}
+.pos-prod-sigara{background:rgba(255,0,68,.08);}
+.pos-prod-sigara:hover{border-color:#ff0044;box-shadow:0 0 20px rgba(255,0,68,.15);}
+.pos-prod-temizlik{background:rgba(191,64,255,.08);}
+.pos-prod-temizlik:hover{border-color:#bf40ff;box-shadow:0 0 20px rgba(191,64,255,.15);}
+.pos-prod-kirtasiye{background:rgba(255,215,0,.08);}
+.pos-prod-kirtasiye:hover{border-color:#ffd700;box-shadow:0 0 20px rgba(255,215,0,.15);}
+.pos-prod-diger{background:rgba(255,20,147,.08);}
+.pos-prod-diger:hover{border-color:#ff1493;box-shadow:0 0 20px rgba(255,20,147,.15);}
+.pos-prod .pp-icon{font-size:26px;margin-bottom:4px;filter:drop-shadow(0 0 4px rgba(0,240,255,.2));}
+.pos-prod .pp-name{font-size:10px;font-weight:700;color:var(--text);line-height:1.3;}
+.pos-prod .pp-price{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--primary);margin-top:3px;text-shadow:0 0 6px rgba(0,240,255,.2);}
+.pos-prod .pp-stok{font-size:9px;color:var(--text3);}
+.cart-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--radius-xs);border:1px solid rgba(0,240,255,.08);margin-bottom:6px;background:rgba(0,240,255,.03);}
+.cart-item .ci-name{flex:1;font-size:12px;font-weight:600;}
+.cart-item .ci-price{font-family:var(--font-mono);font-size:11px;color:var(--text2);}
+.cart-qty{display:flex;align-items:center;gap:4px;}
+.cart-qty button{width:22px;height:22px;border:1px solid rgba(0,240,255,.15);border-radius:4px;background:rgba(10,15,35,.6);cursor:pointer;font-size:13px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text);}
+.cart-qty button:hover{background:var(--primary);color:#080c18;border-color:var(--primary);box-shadow:0 0 10px rgba(0,240,255,.3);}
+.cart-qty span{font-family:var(--font-mono);font-size:12px;font-weight:700;width:24px;text-align:center;}
+.cart-total-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;}
+.cart-total-row .ctl{font-size:11px;color:var(--text3);}
+.cart-total-row .ctv{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text);}
+.cart-total-row.grand .ctv{font-size:18px;color:var(--primary);text-shadow:0 0 10px rgba(0,240,255,.3);}
+.pay-methods{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}
+.pay-btn{background:rgba(10,15,35,.6);border:2px solid rgba(0,240,255,.1);border-radius:var(--radius-sm);cursor:pointer;font-size:11px;font-weight:700;padding:8px;text-align:center;transition:all .2s;color:var(--text2);}
+.pay-btn:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 0 12px rgba(0,240,255,.08);}
+.pay-btn.selected{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);box-shadow:0 0 15px rgba(0,240,255,.15);text-shadow:0 0 8px rgba(0,240,255,.2);}
+
+/* ── VERESİYE ── */
+.veresiye-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .2s;}
+.veresiye-card:hover{border-color:var(--primary);box-shadow:0 0 20px rgba(0,240,255,.08);}
+.vc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.vc-name{font-size:13px;font-weight:700;color:#fff;}
+.vc-amount{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--red);text-shadow:0 0 10px rgba(255,0,68,.3);}
+.vc-sub{font-size:10px;color:var(--text3);}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,240,255,.15);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,240,255,.25);}
+
+/* ── AI ÜRÜN ARAMA ── */
+.ai-modal{max-width:860px;}
+.ai-search-bar{display:flex;gap:8px;margin-bottom:16px;}
+.ai-search-bar input{flex:1;background:rgba(10,15,35,.6);border:2px solid rgba(0,240,255,.15);border-radius:var(--radius-sm);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.ai-search-bar input:focus{border-color:var(--primary);box-shadow:0 0 15px rgba(0,240,255,.1);}
+.ai-search-bar button{flex-shrink:0;}
+.ai-preset-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.ai-tag{background:rgba(10,15,35,.6);border:1px solid rgba(0,240,255,.1);border-radius:20px;color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;padding:4px 12px;transition:all .2s;}
+.ai-tag:hover{background:var(--primary-dim);border-color:var(--primary);color:var(--primary);box-shadow:0 0 10px rgba(0,240,255,.08);}
+.ai-result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;max-height:420px;overflow-y:auto;padding:2px;}
+.ai-product-card{background:rgba(10,15,35,.7);border:2px solid rgba(0,240,255,.1);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:all .2s;position:relative;user-select:none;}
+.ai-product-card:hover{border-color:var(--primary);box-shadow:0 0 20px rgba(0,240,255,.08);transform:translateY(-1px);}
+.ai-product-card.selected{border-color:var(--primary);background:var(--primary-dim);box-shadow:0 0 20px rgba(0,240,255,.1);}
+.ai-product-card .apc-check{position:absolute;top:8px;right:8px;width:20px;height:20px;border:2px solid rgba(0,240,255,.2);border-radius:4px;background:rgba(10,15,35,.6);display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;color:transparent;}
+.ai-product-card.selected .apc-check{background:var(--primary);border-color:var(--primary);color:#080c18;box-shadow:0 0 10px rgba(0,240,255,.3);}
+.ai-product-card .apc-icon{font-size:28px;margin-bottom:6px;filter:drop-shadow(0 0 4px rgba(0,240,255,.2));}
+.ai-product-card .apc-name{font-size:12px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:4px;}
+.ai-product-card .apc-kat{font-size:10px;color:var(--primary);font-weight:600;text-shadow:0 0 6px rgba(0,240,255,.15);}
+.ai-product-card .apc-prices{display:flex;gap:6px;margin-top:6px;font-family:var(--font-mono);font-size:11px;}
+.ai-product-card .apc-alis{color:var(--red);}
+.ai-product-card .apc-satis{color:var(--green);font-weight:700;text-shadow:0 0 6px rgba(0,255,65,.15);}
+.ai-product-card .apc-kdv{font-size:9px;color:var(--text3);margin-top:2px;}
+.ai-status{padding:16px;text-align:center;color:var(--text3);font-size:13px;}
+.ai-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px;}
+.ai-spinner{width:36px;height:36px;border:3px solid rgba(0,240,255,.08);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;box-shadow:0 0 15px rgba(0,240,255,.1);}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ai-sel-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary-dim);border:1px solid rgba(0,240,255,.15);border-radius:var(--radius-sm);margin-bottom:12px;}
+.ai-edit-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px;background:rgba(10,15,35,.5);border:1px solid rgba(0,240,255,.08);border-radius:var(--radius-sm);margin-bottom:6px;font-size:11px;}
+.ai-edit-row input{background:rgba(10,15,35,.6);border:1px solid rgba(0,240,255,.12);border-radius:4px;color:var(--text);font-size:11px;padding:4px 7px;width:100%;font-family:'Plus Jakarta Sans',sans-serif;}
+.ai-edit-row input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 8px rgba(0,240,255,.1);}
+.ai-step{display:none;}.ai-step.active{display:block;}
+.step-indicator{display:flex;gap:0;margin-bottom:18px;}
+.step-dot{flex:1;text-align:center;font-size:10px;font-weight:700;padding:7px 4px;border-bottom:3px solid rgba(0,240,255,.1);color:var(--text3);transition:all .2s;}
+.step-dot.done{border-color:var(--green);color:var(--green);text-shadow:0 0 6px rgba(0,255,65,.15);}
+.step-dot.active{border-color:var(--primary);color:var(--primary);text-shadow:0 0 8px rgba(0,240,255,.2);}
+
+/* ── YENİ NEON EKLEMELER ── */
+.neon-glow{animation:neonPulse 2s ease-in-out infinite;}
+@keyframes neonPulse{0%,100%{opacity:1}50%{opacity:.7}}
+.neon-text{text-shadow:0 0 10px var(--primary),0 0 20px var(--primary);}
+.neon-border-glow{border-color:var(--primary);box-shadow:0 0 15px rgba(0,240,255,.15),inset 0 0 15px rgba(0,240,255,.03);}
+.dt tbody tr.row-kritik td{background:rgba(255,0,68,.04)!important;}
+.dt tbody tr.row-kritik:hover td{background:rgba(255,0,68,.08)!important;}
+.dt tbody tr.row-bitti td{background:rgba(255,0,68,.08)!important;opacity:.6;}
+.dt tbody tr.row-normal td{}
+
+@media print{
+  .sidebar,.top-bar,.noprint{display:none!important;}
+  .app-shell{display:block;}
+  .main-content{padding:0;}
+  body{background:#fff;color:#222;}
+  .card{border:1px solid #ddd;box-shadow:none;margin-bottom:8px;background:#fff;}
+  .card-title,.page-header h2{color:#222;}
+  .kpi .kpi-val{color:#222;}
+  .badge{border:1px solid #ccc;}
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .app-shell{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .pos-grid{grid-template-columns:1fr;}
+  .grid2,.grid3,.grid-60-40{grid-template-columns:1fr;}
+}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;top:70px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:rgba(10,15,35,.95);color:#fff;border:1px solid rgba(0,240,255,.12);border-radius:var(--radius-sm);font-size:12px;font-weight:600;padding:10px 16px;box-shadow:0 0 30px rgba(0,0,0,.5);animation:slideIn .25s ease;display:flex;align-items:center;gap:8px;min-width:200px;}
+.toast.success{border-color:var(--green);box-shadow:0 0 20px rgba(0,255,65,.15);}
+.toast.error{border-color:var(--red);box-shadow:0 0 20px rgba(255,0,68,.15);}
+.toast.warn{border-color:var(--amber);box-shadow:0 0 20px rgba(255,215,0,.15);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════ MODALS ══════════════════════ -->
+
+<!-- AI Ürün Arama Modal -->
+<div id="modal-ai-urun" class="modal-bg" style="display:none;">
+  <div class="modal ai-modal">
+    <div class="modal-header">
+      <h3>🤖 AI ile Ürün Ara & Toplu Ekle</h3>
+      <button class="modal-close" onclick="closeModal('modal-ai-urun')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Adım göstergesi -->
+      <div class="step-indicator">
+        <div class="step-dot active" id="sdot-1">1 · Ürün Ara</div>
+        <div class="step-dot" id="sdot-2">2 · Seç & Düzenle</div>
+        <div class="step-dot" id="sdot-3">3 · Sisteme Ekle</div>
+      </div>
+
+      <!-- ADIM 1: Arama -->
+      <div class="ai-step active" id="ai-step-1">
+        <div class="alert alert-info" style="margin-bottom:14px;">
+          💡 Kantin ürünlerini arayın — AI fiyat tahminleri, kategoriler ve KDV oranlarını otomatik belirler. Türkiye 2024 piyasa fiyatlarına göre tahmini değerler üretilir.
+        </div>
+        <div class="ai-search-bar">
+          <input type="text" id="ai-search-input" placeholder="Ör: çay, kola, sigara, temizlik ürünleri, kahvaltılık..." onkeydown="if(event.key==='Enter')aiSearch()" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+          <button class="btn btn-primary" onclick="aiSearch()">🔍 Ara</button>
+          <button class="btn btn-ghost" onclick="aiSearchRandom()">🎲 Öneri</button>
+        </div>
+        <div style="margin-bottom:10px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;">Marka & Kategori Seçin</div>
+        <div class="ai-preset-tags">
+          <span class="ai-tag" onclick="aiSearchPreset('Türk çayı ürünleri gerçek marka adlarıyla: Çaykur Rize Turist Çay 1000g, Çaykur Altınbaş 200g, Doğuş Karadeniz Çay 500g, Lipton Yellow Label 100 poşet, Twinings Earl Grey 25 poşet, Ahmad Tea English Breakfast 100g, Nescafe Classic 200g, Nescafe Gold 200g, Nescafe 3in1 Klasik 16g paket, Jacobs Monarch 200g, Ülker Bol Köpüklü Toz Neskafe, İhlamur Demlik poşet, Papatya çayı demlik poşet')">☕ Çay & Kahve</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Soğuk içecek markaları gerçek ürün adlarıyla: Coca-Cola 330ml kutu, Coca-Cola 1L PET, Coca-Cola Zero 330ml, Pepsi 330ml kutu, Pepsi Max 330ml, Fanta Portakal 330ml, Sprite 330ml, 7UP 330ml, Uludağ Gazoz 330ml, Uludağ Limonata 330ml, Schweppes Tonic 330ml, Burn Enerji İçeceği 250ml, RedBull 250ml, Monster Energy 500ml, Powerade Mavi 500ml, Gatorade 500ml')">🥤 Gazlı İçecekler</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Su ve meyve suyu markaları gerçek ürün adlarıyla: Pınar Su 0.5L, Pınar Su 1.5L, Sırma Su 0.5L, Sırma Su 1.5L, Erikli Su 0.5L, Nestlé Pure Life 0.5L, Cappy Vişne 200ml, Cappy Portakal 1L, Dimes Multivitamin 1L, Dimes Şeftali 200ml, Tamek Kayısı 1L, Frutti Şeftali 250ml, Pınar Ayran 200ml, Sek Ayran 180ml, Yörük Ayran 500ml, Doğadan Meyve Suyu')">💧 Su & Ayran & Meyve Suyu</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Türk simit, poğaça, börek markası ve ürünleri: Simit (adet), Açma (adet), Poğaça Peynirli (adet), Poğaça Zeytinli (adet), Tost Kaşarlı (adet), Tost Karışık (adet), Sandviç Sucuklu (adet), Sandviç Tavuklu (adet), Börek Peynirli dilim, Börek Ispanaklı dilim, Pide Kaşarlı (adet), Lahmacun (adet)')">🥐 Unlu Mamüller & Sıcak Yiyecek</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Bisküvi ve gofret markaları gerçek ürün adlarıyla: Ülker Dido 35g, Ülker Dido Sütlü 35g, Ülker Biskrem Kakaolu 100g, Ülker PetiBör 400g, Ülker Çikolatalı Gofret 36g, Ülker Eti Cin Bisküvi 136g, Eti Browni 45g, Eti Burçak 200g, Eti Tutku Çikolatalı 100g, Eti Hoşbeş 135g, Eti Pöti Fındıklı 76g, Ülker Halley 30g, Ülker Alpella 36g, Pınar Pick Up Bisküvi 28g, İkram İkramlık Bisküvi 400g')">🍪 Bisküvi & Gofret</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Çikolata markaları gerçek ürün adlarıyla: Ülker Çikolata Sütlü 30g, Ülker Safari Fındıklı 30g, Ülker Napoliten Sütlü 60g, Milka Sütlü Çikolata 100g, Milka Oreo 100g, Toblerone 100g, Snickers 50g, Mars 51g, Twix 50g, KitKat 41.5g, Bounty 57g, Eti Karam Bitter 70g, Nestle Crunch 100g, Ferrero Rocher 3lü, Godiva Sütlü 85g, Bonibon Şekerli Çikolata 35g')">🍫 Çikolata</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Cips ve kuruyemiş markaları gerçek ürün adlarıyla: Lay\'s Classic 29g, Lay\'s Max Domates 37g, Pringles Orijinal 165g, Pringles Sour Cream 165g, Ruffles Ketchup 29g, Doritos 29g, Cheetos Çubuk 27g, Eti Crax 50g, Metro Cips 29g, Cipso Ketçap 29g, Tatlı Patates Cipsi 27g, Çerezci Fındık 100g, Pistasyonu 50g, Leblebi 100g, Antep Fıstığı 100g, Yer Fıstığı 100g')">🍿 Cips & Kuruyemiş</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Sigara ve tütün markaları gerçek fiyatlarıyla 2024 Türkiye: Marlboro Red 20li paket, Marlboro Gold 20li, Marlboro Touch 20li, Parliament Aqua Blue 20li, Parliament Night Blue 20li, Camel Compact 20li, Winston Blue 20li, Winston XStyle Blue 20li, L&M Blue 20li, L&M Red 20li, Muratti Slims 20li, Davidoff Classic 20li, Kent Switch 20li, Vogue Bleue 20li, Philip Morris 20li')">🚬 Sigara & Tütün</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Şekerleme ve sakız markaları gerçek ürün adlarıyla: Haribo Goldbären 100g, Trolli Worms 100g, Ülker Yupo Jelibon 80g, Mabel Şekerleme Karışık 100g, Kent Yulaflı Lokum 200g, Falım Sakız Nane 5li, Falım Sakız Karpuz 5li, Stimorol Sakız 7li, Orbit Spearmint 14li, Extra Nane 14li, Mentos Nane 38g, Mentos Meyve 38g, Chupa Chups 12g, Pop Rocks Çilek, Ülker Drajeesi Sütlü')">🍬 Şekerleme & Sakız</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Süt ve süt ürünleri markaları gerçek ürün adlarıyla: Pınar Tam Yağlı Süt 1L, Pınar Süt 200ml, Sek Tam Yağlı Süt 1L, İçim Süt 1L, Danone Activia Yoğurt 900g, Sütaş Yoğurt 1kg, Pınar Yoğurt 500g, Danone Çikolatalı Içimlik 200ml, Sütaş Ayran 180ml, Pınar Çikolatalı Süt 180ml, Algida Mini Bar Dondurma, Cornetto Klasik Dondurma')">🥛 Süt Ürünleri</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Kişisel bakım ürünleri gerçek marka ve ürün adlarıyla: Colgate Total Diş Macunu 75ml, Oral-B Pro-Expert 75ml, Signal White Now 75ml, Pantene Şampuan 400ml, Head&Shoulders Şampuan 400ml, Dove Şampuan 400ml, Gillette Fusion5 Tıraş Bıçağı, Gillette Venus Kadın Jilet, Nivea Men Tıraş Köpüğü 200ml, Rexona Men Deodorant 150ml, Dove Deodorant 150ml, Fa Duş Jeli 250ml, Protex Antibakteryel Sabun 90g, Dettol Sıvı Sabun 300ml')">🧴 Kişisel Bakım</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Temizlik ürünleri gerçek marka adlarıyla: Ariel Matik Toz Deterjan 900g, Omo Active 900g, Persil Color 900g, Fairy Bulaşık Deterjanı 500ml, Pril Bulaşık Deterjanı 500ml, Domestos Çamaşır Suyu 750ml, Ace Çamaşır Suyu 1L, Bref Tuvalet Temizleyici 700ml, Wc Net 750ml, CIF Krem 500ml, Ajax Ovma Tozu 500g, Selpak Tuvalet Kağıdı 32li, Papia Peçete 100lü, Puf Kağıt Havlu 2li')">🧹 Temizlik</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Kırtasiye malzemeleri gerçek marka adlarıyla: Bic Cristal Tükenmez Mavi, Bic Cristal Kırmızı, Pentel Tükenmez 0.7mm, Staedtler HB Kurşun Kalem, Faber-Castell Kurşun Kalem Seti, Bic Lighter Çakmak, Zippo Çakmak, A4 Fotokopi Kağıdı 500 yaprak, Pelikan Defter A4 60 yaprak, Kraf Zarf 10lu, Bantlı Post-it 100 yaprak, Makas Linea, Acco Zımba, Zımba Teli 24/6, Deli Silgi')">📎 Kırtasiye</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Temel gıda market ürünleri gerçek marka adlarıyla: Torku Toz Şeker 1kg, Ülker Çay Şekeri 500g, Doğuş Siyah Çay 500g, Filiz Makarna Spagetti 500g, Barilla Spagetti 500g, Lüks Pirinç 1kg, Tat Domates Salçası 400g, Duru Kırık Buğday 500g, Eti Grisini 125g, Marki Mısır Gevreği 375g, Ulker Eti Cin 138g, Tarcin Francala Ekmek, Harry\'s Toast Ekmek, Sana Margarin 500g')">🛒 Temel Gıda</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Konserve ve hazır yemek ürünleri gerçek marka adlarıyla: Dimes Korsan Konserve Mantar 400g, Tat Beyaz Fasulye 400g, Dimes Konserve Mısır 425g, Superfresh Dondurulmuş Pizza, Pınar Sosis 200g, Pınar Köfte 250g, Balcı Ton Balığı 160g, Ülker Krackers, Tamek Domates Suyu 1L, Knorr Sebze Çorbası, Pastavilla Makarna, Superfresh Sebze Karışık 450g')">🥫 Konserve & Hazır</span>
+
+          <span class="ai-tag" onclick="aiSearchPreset('Elektronik aksesuar ve pil markaları gerçek ürün adlarıyla: Duracell AA Pil 4lü, Varta AA Pil 4lü, Energizer AAA Pil 4lü, Duracell AAA Pil 4lü, Samsung USB-C Şarj Kablosu 1m, Baseus Lightning Kablo 1m, Xiaomi 20W Şarj Adaptörü, Anker USB Çoğaltıcı, Hama USB Hub 4 Port, JBL Kablolu Kulaklık, Sony MDR Kulaklık, Samsung Şeffaf Kılıf, Spigen iPhone Kılıf, Torbalı Şarj Aleti 5V 2A')">🔌 Elektronik & Pil</span>
+        </div>
+        <div id="ai-results-container">
+          <div class="ai-status">🔍 Bir kategori seçin veya ürün arayın</div>
+        </div>
+      </div>
+
+      <!-- ADIM 2: Seç & Düzenle -->
+      <div class="ai-step" id="ai-step-2">
+        <div class="ai-sel-bar">
+          <span id="ai-sel-count" style="font-size:12px;font-weight:700;color:var(--primary);">0 ürün seçildi</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="aiSelectAll()">Tümünü Seç</button>
+            <button class="btn btn-ghost btn-sm" onclick="aiDeselectAll()">Seçimi Kaldır</button>
+            <button class="btn btn-primary btn-sm" onclick="aiGoStep3()">Devam Et →</button>
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Seçili ürünleri kontrol edin — fiyatları düzenleyebilirsiniz:</div>
+        <div id="ai-edit-list"></div>
+      </div>
+
+      <!-- ADIM 3: Özet & Onayla -->
+      <div class="ai-step" id="ai-step-3">
+        <div class="alert alert-success" id="ai-step3-info"></div>
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>Ürün</th><th>Kategori</th><th class="tc">Alış ₺</th><th class="tc">Satış ₺</th><th class="tc">KDV</th><th class="tc">Stok</th></tr></thead>
+            <tbody id="ai-confirm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="ai-btn-back" style="display:none;" onclick="aiBack()">← Geri</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-ai-urun')">İptal</button>
+      <button class="btn btn-success" id="ai-btn-ekle" style="display:none;" onclick="aiEkleAll()">✅ Seçilenleri Sisteme Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ürün Ekle/Düzenle Modal -->
+<div id="modal-urun" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-urun-title">Yeni Ürün</h3>
+      <button class="modal-close" onclick="closeModal('modal-urun')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgg"><label>Barkod / Ürün Kodu</label><input type="text" id="u-barcode" placeholder="ÜRÜN001"></div>
+        <div class="fgg"><label>Ürün Adı *</label><input type="text" id="u-ad" placeholder="Çay"></div>
+      </div>
+      <div class="fg">
+        <div class="fgg"><label>Kategori *</label>
+          <select id="u-kat" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+            <option value="İçecek" style="color:#00e5ff;">☕ İçecek</option>
+            <option value="Yiyecek" style="color:#00ff41;">🍞 Yiyecek</option>
+            <option value="Sigara & Tütün" style="color:#ff0044;">🚬 Sigara & Tütün</option>
+            <option value="Temizlik" style="color:#bf40ff;">🧹 Temizlik</option>
+            <option value="Kırtasiye" style="color:#ffd700;">📎 Kırtasiye</option>
+            <option value="Diğer" style="color:#ff1493;">📦 Diğer</option>
+          </select>
+        </div>
+        <div class="fgg"><label>Birim</label>
+          <select id="u-birim" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+            <option value="Adet">Adet</option>
+            <option value="Paket">Paket</option>
+            <option value="Kutu">Kutu</option>
+            <option value="Kg">Kg</option>
+            <option value="Lt">Lt</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <div class="fgg"><label>Alış Fiyatı (₺) *</label><input type="number" id="u-alis" step="0.01" placeholder="0.00" oninput="calcKarMarji()"></div>
+        <div class="fgg"><label>Satış Fiyatı (₺) *</label><input type="number" id="u-satis" step="0.01" placeholder="0.00" oninput="calcKarMarji()"></div>
+        <div class="fgg"><label>Kâr Marjı</label><input type="text" id="u-marj" readonly></div>
+      </div>
+      <div class="fg">
+        <div class="fgg"><label>Mevcut Stok</label><input type="number" id="u-stok" placeholder="0"></div>
+        <div class="fgg"><label>Minimum Stok (Uyarı)</label><input type="number" id="u-minstok" placeholder="5"></div>
+        <div class="fgg"><label>KDV %</label>
+          <select id="u-kdv" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+            <option value="0">%0</option>
+            <option value="1">%1</option>
+            <option value="8">%8</option>
+            <option value="18" selected>%18</option>
+            <option value="20">%20</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgg mb16"><label>Notlar</label><textarea id="u-not" rows="2" placeholder="Opsiyonel not..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-urun')">İptal</button>
+      <button class="btn btn-primary" onclick="saveUrun()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alış Modal -->
+<div id="modal-alis" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📦 Mal Alışı Gir</h3>
+      <button class="modal-close" onclick="closeModal('modal-alis')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fgg"><label>Tedarikçi</label><input type="text" id="al-tedarikcj" list="tedarikci-list" placeholder="Tedarikçi adı"></div>
+        <div class="fgg"><label>Tarih</label><input type="date" id="al-tarih"></div>
+        <div class="fgg"><label>Fatura No</label><input type="text" id="al-fatura" placeholder="2024-001"></div>
+      </div>
+      <datalist id="tedarikci-list"></datalist>
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+      <div class="fg2 mb16">
+        <div class="fgg"><label>Ürün</label>
+          <select id="al-urun" onchange="alUrunSec()" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+            <option value="">-- Ürün Seç --</option>
+          </select>
+        </div>
+        <div class="fgg"><label>Miktar</label><input type="number" id="al-miktar" placeholder="1" min="1" oninput="calcAlisToplam()"></div>
+        <div class="fgg"><label>Birim Alış Fiyatı (₺)</label><input type="number" id="al-fiyat" step="0.01" oninput="calcAlisToplam()"></div>
+        <div class="fgg"><label>Toplam (₺)</label><input type="number" id="al-toplam" readonly></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="alisKalemEkle()">➕ Kalem Ekle</button>
+      <div id="alis-kalemler" style="margin-top:12px;"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text3);">Fatura Toplamı</span>
+        <span id="alis-genel-toplam" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--red);">₺0,00</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-alis')">İptal</button>
+      <button class="btn btn-success" onclick="saveAlis()">✅ Alışı Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Veresiye Ödeme Modal -->
+<div id="modal-odeme" class="modal-bg" style="display:none;">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>💳 Ödeme Al</h3>
+      <button class="modal-close" onclick="closeModal('modal-odeme')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-warn">⚠️ <span id="odeme-kisi-adi">Kişi</span> adına borç kapatılacak.</div>
+      <div class="fg2">
+        <div class="fgg"><label>Toplam Borç (₺)</label><input type="number" id="odeme-toplam-borc" readonly></div>
+        <div class="fgg"><label>Ödeme Miktarı (₺)</label><input type="number" id="odeme-miktar" step="0.01" oninput="calcKalan()"></div>
+      </div>
+      <div class="fgg mb16"><label>Kalan Borç (₺)</label><input type="number" id="odeme-kalan" readonly></div>
+      <div class="fgg"><label>Ödeme Tarihi</label><input type="date" id="odeme-tarih"></div>
+      <div class="fgg mt12"><label>Not</label><input type="text" id="odeme-not" placeholder="Opsiyonel not..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-odeme')">İptal</button>
+      <button class="btn btn-success" onclick="saveOdeme()">✅ Ödemeyi Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sayım Modal -->
+<div id="modal-sayim" class="modal-bg" style="display:none;">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3>🔢 Stok Sayımı</h3>
+      <button class="modal-close" onclick="closeModal('modal-sayim')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-warn">⚠️ Sayım sonucunda sistem stoğu güncellenir. Bu işlem geri alınamaz.</div>
+      <div style="max-height:400px;overflow-y:auto;">
+        <table class="dt">
+          <thead><tr><th>Ürün</th><th class="tc">Sistem Stok</th><th class="tc">Sayılan</th><th class="tc">Fark</th></tr></thead>
+          <tbody id="sayim-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-sayim')">İptal</button>
+      <button class="btn btn-amber" onclick="saveSayim()">📋 Sayımı Onayla & Güncelle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Veresiye Kişi Ekle Modal -->
+<div id="modal-kisi" class="modal-bg" style="display:none;">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>👤 Veresiye Kişisi Ekle</h3>
+      <button class="modal-close" onclick="closeModal('modal-kisi')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgg mb16"><label>Ad Soyad *</label><input type="text" id="kisi-ad" placeholder="Mehmet YILMAZ"></div>
+      <div class="fgg mb16"><label>Rütbe / Unvan</label><input type="text" id="kisi-rutbe" placeholder="Uzm.J.Çvş."></div>
+      <div class="fgg mb16"><label>Telefon</label><input type="tel" id="kisi-tel" placeholder="0555 000 00 00"></div>
+      <div class="fgg"><label>Kredi Limiti (₺)</label><input type="number" id="kisi-limit" placeholder="500"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-kisi')">İptal</button>
+      <button class="btn btn-primary" onclick="saveKisi()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ APP SHELL ══════════════════════ -->
+<div class="app-shell">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="tb-logo">
+      <div class="tb-logo-icon">🏪</div>
+      <div>
+        <h1 id="tb-birim-adi">KANTİN YÖNETİM SİSTEMİ</h1>
+        <p>Tefenni İlçe J.K. Kantini</p>
+      </div>
+    </div>
+    <div class="tb-period" id="tb-tarih"></div>
+    <div class="tb-actions">
+      <div class="tb-badge ok" id="tb-stok-badge">✅ Stok Normal</div>
+      <div class="tb-badge" id="tb-gun-ciro" style="font-family:'JetBrains Mono',monospace;">📊 Günlük: ₺0</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-section-title">Ana Menü</div>
+    <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard',this)"><span class="ni">📊</span>Dashboard</div>
+    <div class="nav-item" data-tab="pos" onclick="switchTab('pos',this)"><span class="ni">🛒</span>Satış (POS)</div>
+    <div class="nav-section-title">Stok</div>
+    <div class="nav-item" data-tab="depo-takibi" onclick="switchTab('depo-takibi',this)"><span class="ni">📊</span>Depo Takibi</div>
+    <div class="nav-item" data-tab="urunler" onclick="switchTab('urunler',this)"><span class="ni">📦</span>Ürünler</div>
+    <div class="nav-item" data-tab="alis" onclick="switchTab('alis',this)"><span class="ni">🚚</span>Mal Alışı</div>
+    <div class="nav-item" data-tab="stok-hareketler" onclick="switchTab('stok-hareketler',this)"><span class="ni">📋</span>Stok Hareketleri</div>
+    <div class="nav-divider"></div>
+    <div class="nav-section-title">Finans</div>
+    <div class="nav-item" data-tab="satislar" onclick="switchTab('satislar',this)"><span class="ni">🧾</span>Satış Geçmişi</div>
+    <div class="nav-item" data-tab="veresiye" onclick="switchTab('veresiye',this)"><span class="ni">📒</span>Veresiye<span class="nbadge" id="veresiye-badge" style="display:none;">0</span></div>
+    <div class="nav-item" data-tab="kasa" onclick="switchTab('kasa',this)"><span class="ni">💰</span>Kasa & Raporlar</div>
+    <div class="nav-divider"></div>
+    <div class="nav-section-title">Sistem</div>
+    <div class="nav-item" data-tab="ayarlar" onclick="switchTab('ayarlar',this)"><span class="ni">⚙️</span>Ayarlar</div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <div id="tab-dashboard" class="tp active">
+      <div class="page-header">
+        <div><h2>📊 Dashboard</h2><p>Genel bakış ve günlük özet</p></div>
+        <div class="ph-actions">
+          <button class="btn btn-ghost btn-sm" onclick="renderDashboard()">🔄 Yenile</button>
+          <button class="btn btn-primary btn-sm" onclick="switchTab('pos',document.querySelector('[data-tab=pos]'))">🛒 Satış Yap</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="dash-kpis"></div>
+      <div class="grid-60-40">
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--primary)"></span>Son 7 Günlük Satış (₺)</div>
+          <canvas id="chart-satis" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--purple)"></span>Kategori Dağılımı</div>
+          <canvas id="chart-kategori" height="200"></canvas>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--red)"></span>⚠️ Kritik Stok Uyarıları</div>
+          <div id="dash-kritik-stok"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--amber)"></span>📒 Son Veresiyeler</div>
+          <div id="dash-veresiye"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title"><span class="ct-accent" style="background:var(--green)"></span>🧾 Bugünkü Satışlar</div>
+        <div class="tw" id="dash-bugun-satis"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ DEPO TAKİBİ ═══════════ -->
+    <div id="tab-depo-takibi" class="tp">
+      <div class="page-header">
+        <div><h2>📊 Depo Takibi</h2><p>Stok durumu, satılan ve kalan ürünler</p></div>
+        <div class="ph-actions">
+          <select id="dt-kat-filtre" onchange="renderDepoTakibi()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+            <option value="" style="color:#a0b4c8;">Tüm Kategoriler</option>
+            <option style="color:#00e5ff;">İçecek</option><option style="color:#00ff41;">Yiyecek</option><option style="color:#ff0044;">Sigara & Tütün</option>
+            <option style="color:#bf40ff;">Temizlik</option><option style="color:#ffd700;">Kırtasiye</option><option style="color:#ff1493;">Diğer</option>
+          </select>
+          <select id="dt-durum-filtre" onchange="renderDepoTakibi()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+            <option value="" style="color:#a0b4c8;">Tüm Durumlar</option>
+            <option value="kritik" style="color:#ffd700;">Kritik Stok</option>
+            <option value="normal" style="color:#00ff41;">Stok Var</option>
+            <option value="bitti" style="color:#ff0044;">Stok Bitti</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="printDepo('stok')">🖨️ Stok Yazdır</button>
+          <button class="btn btn-ghost btn-sm" onclick="printDepo('satis')">🖨️ Satılanlar</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Tüm Sayfa</button>
+        </div>
+      </div>
+
+      <!-- KPI Özet -->
+      <div class="kpi-grid" id="dt-kpis" style="grid-template-columns:repeat(5,1fr);"></div>
+
+      <!-- KALAN ÜRÜNLER (Stok Durumu) -->
+      <div class="card mb16">
+        <div class="card-title"><span class="ct-accent" style="background:var(--green)"></span>📦 Kalan Ürünler — Stok Durumu</div>
+        <div class="tw">
+          <table class="dt" id="dt-stok-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Barkod</th><th>Ürün Adı</th><th>Kategori</th>
+                <th class="tc">Alış ₺</th><th class="tc">Satış ₺</th>
+                <th class="tc">Kalan Stok</th><th class="tc">Min.Stok</th><th class="tc">Durum</th><th class="tc">Stok Değeri (Alış)</th>
+              </tr>
+            </thead>
+            <tbody id="dt-stok-tbody"></tbody>
+            <tfoot><tr>
+              <td colspan="6" class="tr"><strong>Toplam:</strong></td>
+              <td class="tr" id="dt-toplam-stok"><strong>0</strong></td>
+              <td></td><td></td>
+              <td class="tr" id="dt-toplam-deger"><strong>₺0,00</strong></td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- SATILAN ÜRÜNLER -->
+      <div class="card">
+        <div class="card-title"><span class="ct-accent" style="background:var(--amber)"></span>📈 Satılan Ürünler (Tüm Zamanlar)</div>
+        <div class="tw">
+          <table class="dt" id="dt-satis-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Ürün Adı</th><th>Kategori</th>
+                <th class="tc">Toplam Satış</th><th class="tc">Birim ₺</th>
+                <th class="tc">Toplam Ciro ₺</th><th class="tc">Toplam Kâr ₺</th><th class="tc">Kâr %</th>
+              </tr>
+            </thead>
+            <tbody id="dt-satis-tbody"></tbody>
+            <tfoot><tr>
+              <td colspan="3" class="tr"><strong>Genel Toplam:</strong></td>
+              <td class="tr" id="dt-satis-adet"><strong>0</strong></td>
+              <td></td>
+              <td class="tr" id="dt-satis-ciro"><strong>₺0,00</strong></td>
+              <td class="tr" id="dt-satis-kar"><strong>₺0,00</strong></td>
+              <td class="tr" id="dt-satis-kar-yuzde"><strong>%0</strong></td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ POS ═══════════ -->
+    <div id="tab-pos" class="tp">
+      <div class="page-header noprint">
+        <div><h2>🛒 Satış Noktası</h2><p>Hızlı satış yapın</p></div>
+        <div class="ph-actions">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+            <span>👤 Veresiyeye</span>
+            <select id="pos-veresiye-kisi" style="background:none;border:none;outline:none;cursor:pointer;font-size:12px;color:var(--primary);margin-left:4px;">
+              <option value="">-- Normal Satış --</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="pos-grid">
+        <!-- Ürünler -->
+        <div class="pos-products">
+          <div class="pos-cat-tabs" id="pos-cats"></div>
+          <div style="display:flex;gap:6px;margin:6px 0;">
+            <input type="text" id="pos-ara" placeholder="🔍 Ürün ara..." oninput="renderPOS()" style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:6px 10px;font-size:12px;outline:none;color:#f0f4ff;box-sizing:border-box;">
+            <input type="text" id="pos-barkod" placeholder="📷 Barkod okut..." style="flex:0 0 160px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:6px 10px;font-size:12px;outline:none;color:#f0f4ff;box-sizing:border-box;font-family:'JetBrains Mono',monospace;" onkeydown="if(event.key==='Enter'){scanBarcode(this.value);this.value='';}">
+          </div>
+          <div class="pos-prod-grid" id="pos-urunler"></div>
+        </div>
+        <!-- Sepet -->
+        <div class="pos-cart">
+          <div class="pos-cart-header">
+            🛒 Sepet
+            <button class="btn btn-ghost btn-xs" onclick="clearCart()">🗑 Temizle</button>
+          </div>
+          <div class="pos-cart-items" id="cart-items">
+            <div style="text-align:center;color:var(--text3);font-size:12px;margin-top:30px;">Ürün seçin</div>
+          </div>
+          <div class="pos-cart-footer">
+            <div class="cart-total-row"><span class="ctl">Ara Toplam</span><span class="ctv" id="cart-subtotal">₺0,00</span></div>
+            <div class="cart-total-row"><span class="ctl">KDV</span><span class="ctv" id="cart-kdv">₺0,00</span></div>
+            <div class="cart-total-row" style="border-top:2px solid var(--border);padding-top:8px;margin-top:4px;">
+              <span style="font-weight:800;font-size:13px;">TOPLAM</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:var(--primary);" id="cart-total">₺0,00</span>
+            </div>
+            <div class="pay-methods">
+              <div class="pay-btn selected" onclick="selectPay('nakit')" id="pay-nakit">💵 Nakit</div>
+              <div class="pay-btn" onclick="selectPay('kart')" id="pay-kart">💳 Kart</div>
+              <div class="pay-btn" onclick="selectPay('veresiye')" id="pay-veresiye">📒 Veresiye</div>
+              <div class="pay-btn" onclick="selectPay('kart2')" id="pay-kart2">📱 QR/Havale</div>
+            </div>
+            <div id="nakit-geri" style="display:none;margin-top:8px;">
+              <div class="fgg"><label>Alınan Para (₺)</label><input type="number" id="nakit-alinan" placeholder="0" oninput="calcUstluk()" step="0.50"></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                <span style="font-size:11px;color:var(--text3);">Para Üstü:</span>
+                <span id="nakit-ustu" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green);">₺0,00</span>
+              </div>
+            </div>
+            <button class="btn btn-success" style="width:100%;margin-top:10px;font-size:14px;padding:12px;" onclick="completeSale()">
+              ✅ Satışı Tamamla
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ÜRÜNLER ═══════════ -->
+    <div id="tab-urunler" class="tp">
+      <div class="page-header">
+        <div><h2>📦 Ürün Yönetimi</h2><p>Stok kartları ve fiyatlandırma</p></div>
+        <div class="ph-actions">
+          <input type="text" placeholder="🔍 Ürün ara..." id="urun-ara" oninput="filterUrunler()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 12px;font-size:12px;width:200px;outline:none;color:#f0f4ff;">
+          <select id="urun-kat-filtre" onchange="filterUrunler()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+            <option value="" style="color:#a0b4c8;">Tüm Kategoriler</option>
+            <option style="color:#00e5ff;">İçecek</option><option style="color:#00ff41;">Yiyecek</option><option style="color:#ff0044;">Sigara & Tütün</option>
+            <option style="color:#bf40ff;">Temizlik</option><option style="color:#ffd700;">Kırtasiye</option><option style="color:#ff1493;">Diğer</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="openSayimModal()">🔢 Stok Sayımı</button>
+          <button class="btn btn-amber btn-sm" onclick="openAIUrunModal()">🤖 AI ile Ürün Ara</button>
+          <button class="btn btn-primary btn-sm" onclick="openUrunModal()">➕ Yeni Ürün</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Barkod</th><th>Ürün Adı</th><th>Kategori</th>
+                <th class="tc">Alış ₺</th><th class="tc">Satış ₺</th><th class="tc">KDV</th>
+                <th class="tc">Stok</th><th class="tc">Min.Stok</th><th class="tc">Durum</th><th class="tc">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="urun-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ MAL ALIŞI ═══════════ -->
+    <div id="tab-alis" class="tp">
+      <div class="page-header">
+        <div><h2>🚚 Mal Alışı</h2><p>Tedarikçiden gelen malları stoka gir</p></div>
+        <div class="ph-actions">
+          <button class="btn btn-success btn-sm" onclick="openAlisModal()">➕ Yeni Alış Faturası</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Tarih</th><th>Fatura No</th><th>Tedarikçi</th><th>Ürünler</th>
+                <th class="tc">Kalem</th><th class="tc">Toplam (₺)</th><th class="tc">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="alis-tbody"></tbody>
+            <tfoot><tr><td colspan="5" class="tr">Genel Toplam:</td><td class="tr" id="alis-gtoplam">₺0,00</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ STOK HAREKETLERİ ═══════════ -->
+    <div id="tab-stok-hareketler" class="tp">
+      <div class="page-header">
+        <div><h2>📋 Stok Hareketleri</h2><p>Tüm giriş/çıkış kayıtları</p></div>
+        <div class="ph-actions">
+          <select id="sh-urun-filtre" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;" onchange="renderStokHareketler()">
+            <option value="" style="color:#a0b4c8;">Tüm Ürünler</option>
+          </select>
+          <select id="sh-tip-filtre" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;" onchange="renderStokHareketler()">
+            <option value="" style="color:#a0b4c8;">Tüm Hareketler</option>
+            <option value="ALIS" style="color:#00ff41;">Alış</option>
+            <option value="SATIS" style="color:#ff0044;">Satış</option>
+            <option value="SAYIM" style="color:#ffd700;">Sayım Düzeltme</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Tarih</th><th>Ürün</th><th>Hareket Tipi</th>
+                <th class="tc">Giriş</th><th class="tc">Çıkış</th><th class="tc">Sonraki Stok</th><th>Açıklama</th>
+              </tr>
+            </thead>
+            <tbody id="sh-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ SATIŞ GEÇMİŞİ ═══════════ -->
+    <div id="tab-satislar" class="tp">
+      <div class="page-header">
+        <div><h2>🧾 Satış Geçmişi</h2><p>Tüm satış işlemleri</p></div>
+        <div class="ph-actions">
+          <input type="date" id="satis-bas-tarih" onchange="renderSatislar()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+          <input type="date" id="satis-bit-tarih" onchange="renderSatislar()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+          <select id="satis-odeme-filtre" onchange="renderSatislar()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+            <option value="" style="color:#a0b4c8;">Tüm Ödemeler</option>
+            <option value="nakit" style="color:#00ff41;">Nakit</option>
+            <option value="kart" style="color:#00e5ff;">Kart</option>
+            <option value="veresiye" style="color:#ff0044;">Veresiye</option>
+            <option value="kart2" style="color:#bf40ff;">QR/Havale</option>
+          </select>
+        </div>
+      </div>
+      <div class="kpi-grid" id="satis-kpis" style="grid-template-columns:repeat(4,1fr);"></div>
+      <div class="card">
+        <div class="tw">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>Tarih & Saat</th><th>Fiş No</th><th>Ürünler</th>
+                <th class="tc">Toplam (₺)</th><th class="tc">KDV (₺)</th><th>Ödeme</th><th>Kişi</th><th class="tc">İptal</th>
+              </tr>
+            </thead>
+            <tbody id="satis-tbody"></tbody>
+            <tfoot><tr><td colspan="3">Toplam:</td><td class="tr" id="satis-gtoplam"></td><td class="tr" id="satis-gkdv"></td><td colspan="3"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ VERESİYE ═══════════ -->
+    <div id="tab-veresiye" class="tp">
+      <div class="page-header">
+        <div><h2>📒 Veresiye Defteri</h2><p>Borçlu takibi ve tahsilat</p></div>
+        <div class="ph-actions">
+          <button class="btn btn-primary btn-sm" onclick="openKisiModal()">👤 Yeni Kişi Ekle</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="veresiye-kpis" style="grid-template-columns:repeat(3,1fr);"></div>
+      <div class="grid2">
+        <div>
+          <div class="card-title" style="margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;"><span class="ct-accent" style="background:var(--red);display:inline-block;width:3px;height:14px;border-radius:2px;margin-right:6px;vertical-align:middle;"></span>Borçlular</div>
+          <div id="veresiye-kisiler"></div>
+        </div>
+        <div>
+          <div class="card-title" style="margin-bottom:12px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;"><span class="ct-accent" style="background:var(--amber);display:inline-block;width:3px;height:14px;border-radius:2px;margin-right:6px;vertical-align:middle;"></span>Hareket Geçmişi</div>
+          <div class="card" id="veresiye-detay">
+            <div style="text-align:center;color:var(--text3);font-size:12px;padding:30px 0;">Bir kişi seçin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ KASA & RAPORLAR ═══════════ -->
+    <div id="tab-kasa" class="tp">
+      <div class="page-header">
+        <div><h2>💰 Kasa & Raporlar</h2><p>Mali özet ve analizler</p></div>
+        <div class="ph-actions">
+          <select id="kasa-donem" onchange="renderKasa()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:7px 10px;font-size:12px;outline:none;color:#f0f4ff;">
+            <option value="bugun" style="color:#00e5ff;">Bugün</option>
+            <option value="bu_hafta" style="color:#00ff41;">Bu Hafta</option>
+            <option value="bu_ay" style="color:#ffd700;">Bu Ay</option>
+            <option value="tum" style="color:#bf40ff;">Tüm Zamanlar</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Yazdır</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="kasa-kpis"></div>
+      <div class="grid2 mb16">
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--green)"></span>Ödeme Yöntemi Dağılımı</div>
+          <canvas id="chart-odeme" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--cyan)"></span>Günlük Kâr Trendi</div>
+          <canvas id="chart-kar" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-accent" style="background:var(--amber)"></span>En Çok Satan Ürünler (Top 10)</div>
+        <div class="tw">
+          <table class="dt">
+            <thead><tr><th>#</th><th>Ürün</th><th class="tc">Satış Adedi</th><th class="tc">Ciro (₺)</th><th class="tc">Kâr (₺)</th><th class="tc">Kâr Marjı</th></tr></thead>
+            <tbody id="top-urunler"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:16px;">
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--primary)"></span>Günlük Kasa Özeti</div>
+          <div id="kasa-ozet"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--purple)"></span>Stok Değerleme</div>
+          <div id="stok-deger"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ AYARLAR ═══════════ -->
+    <div id="tab-ayarlar" class="tp">
+      <div class="page-header">
+        <div><h2>⚙️ Ayarlar</h2><p>Sistem yapılandırması</p></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title"><span class="ct-accent"></span>Kantin Bilgileri</div>
+          <div class="fg" style="grid-template-columns:1fr;">
+            <div class="fgg"><label>Kantin Adı</label><input type="text" id="set-ad" placeholder="Tefenni İlçe J.K. Kantini" oninput="saveAyarlar()"></div>
+            <div class="fgg"><label>Birim</label><input type="text" id="set-birim" placeholder="Tefenni İlçe J.K." oninput="saveAyarlar()"></div>
+            <div class="fgg"><label>Sorumlu Ad Soyad</label><input type="text" id="set-sorumlu" placeholder="Uzm.J.Çvş. ..." oninput="saveAyarlar()"></div>
+            <div class="fgg"><label>Sorumlu Rütbesi</label><input type="text" id="set-rutbe" placeholder="Uzm.J.VII.Kad.Çvş." oninput="saveAyarlar()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--amber)"></span>Kasa Ayarları</div>
+          <div class="fg" style="grid-template-columns:1fr;">
+            <div class="fgg"><label>KDV Dahil Fiyatlandırma</label>
+              <select id="set-kdv-dahil" onchange="saveAyarlar()" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+                <option value="1" style="color:#00e5ff;">Evet - Fiyatlar KDV dahil</option>
+                <option value="0" style="color:#ffd700;">Hayır - Fiyatlara KDV eklenir</option>
+              </select>
+            </div>
+            <div class="fgg"><label>Varsayılan KDV Oranı (%)</label><input type="number" id="set-kdv-oran" placeholder="18" oninput="saveAyarlar()"></div>
+            <div class="fgg"><label>Para Birimi</label>
+              <select id="set-para" onchange="saveAyarlar()" style="background:var(--surface);border:1px solid var(--border2);color:#f0f4ff;">
+                <option value="₺" style="color:#00e5ff;">₺ Türk Lirası</option>
+                <option value="$" style="color:#00ff41;">$ Dolar</option>
+                <option value="€" style="color:#ffd700;">€ Euro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="ct-accent" style="background:var(--red)"></span>Veri Yönetimi</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="exportData()">📤 Verileri Dışa Aktar (JSON)</button>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+              📥 Verileri İçe Aktar
+              <input type="file" accept=".json" style="display:none;" onchange="importData(this)">
+            </label>
+            <button class="btn btn-danger btn-sm" onclick="resetAll()">🗑️ Tüm Verileri Sıfırla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<script>
+// ════════════════════════════════════════════════════════════
+// STORAGE & CONSTANTS
+// ════════════════════════════════════════════════════════════
+const S = k => JSON.parse(localStorage.getItem(k) || 'null');
+const W = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const today = () => new Date().toISOString().slice(0,10);
+const now = () => new Date().toISOString();
+const fmt2 = n => (Math.round((n||0)*100)/100).toFixed(2).replace('.',',');
+const fmtP = n => ((n||0)*100).toFixed(1) + '%';
+
+const K = {
+  URUNLER: 'kt_urunler',
+  SATISLAR: 'kt_satislar',
+  ALISLAR: 'kt_alislar',
+  STOK_HAR: 'kt_stok_har',
+  KISILER: 'kt_kisiler',
+  VERESIYE: 'kt_veresiye',
+  AYARLAR: 'kt_ayarlar',
+};
+
+const gU = () => S(K.URUNLER) || [];
+const gSat = () => S(K.SATISLAR) || [];
+const gAl = () => S(K.ALISLAR) || [];
+const gSH = () => S(K.STOK_HAR) || [];
+const gKisi = () => S(K.KISILER) || [];
+const gVer = () => S(K.VERESIYE) || [];
+const gAyar = () => S(K.AYARLAR) || {ad:'Kantin',birim:'Tefenni İlçe J.K.',sorumlu:'',rutbe:'',kdvDahil:'1',kdvOran:18,para:'₺'};
+
+// ════════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════════
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tp').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  if (el) el.classList.add('active');
+  // Render on switch
+  if (tabId === 'dashboard') renderDashboard();
+  else if (tabId === 'urunler') renderUrunler();
+  else if (tabId === 'alis') renderAlislar();
+  else if (tabId === 'satislar') renderSatislar();
+  else if (tabId === 'veresiye') renderVeresiye();
+  else if (tabId === 'kasa') renderKasa();
+  else if (tabId === 'stok-hareketler') renderStokHareketler();
+  else if (tabId === 'depo-takibi') renderDepoTakibi();
+  else if (tabId === 'pos') renderPOS();
+  else if (tabId === 'ayarlar') loadAyarlar();
+}
+
+// ════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════
+function toast(msg, type='') {
+  const c = document.getElementById('toast-container');
+  const d = document.createElement('div');
+  d.className = 'toast ' + type;
+  d.innerHTML = msg;
+  c.appendChild(d);
+  setTimeout(() => d.remove(), 3200);
+}
+
+// ════════════════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+
+// ════════════════════════════════════════════════════════════
+// ÜRÜN YÖNETİMİ
+// ════════════════════════════════════════════════════════════
+let _editUrunId = null;
+
+function openUrunModal(id = null) {
+  _editUrunId = id;
+  const m = document.getElementById('modal-urun-title');
+  const u = id ? gU().find(x => x.id === id) : null;
+  m.textContent = id ? '✏️ Ürün Düzenle' : '➕ Yeni Ürün';
+  document.getElementById('u-barcode').value = u?.barcode || '';
+  document.getElementById('u-ad').value = u?.ad || '';
+  document.getElementById('u-kat').value = u?.kat || 'İçecek';
+  document.getElementById('u-birim').value = u?.birim || 'Adet';
+  document.getElementById('u-alis').value = u?.alis || '';
+  document.getElementById('u-satis').value = u?.satis || '';
+  document.getElementById('u-stok').value = u?.stok || 0;
+  document.getElementById('u-minstok').value = u?.minStok || 5;
+  document.getElementById('u-kdv').value = u?.kdv ?? 18;
+  document.getElementById('u-not').value = u?.not || '';
+  calcKarMarji();
+  openModal('modal-urun');
+  setTimeout(() => document.getElementById('u-ad').focus(), 100);
+}
+
+function calcKarMarji() {
+  const a = parseFloat(document.getElementById('u-alis').value) || 0;
+  const s = parseFloat(document.getElementById('u-satis').value) || 0;
+  const el = document.getElementById('u-marj');
+  if (a > 0 && s > 0) {
+    const marj = ((s - a) / a * 100);
+    el.value = (marj >= 0 ? '+' : '') + marj.toFixed(1) + '%';
+    el.className = marj >= 0 ? 'hi' : 'err';
+  } else {
+    el.value = '';
+    el.className = '';
+  }
+}
+
+function saveUrun() {
+  const ad = document.getElementById('u-ad').value.trim();
+  if (!ad) { toast('❌ Ürün adı zorunludur!', 'error'); return; }
+  const alis = parseFloat(document.getElementById('u-alis').value) || 0;
+  const satis = parseFloat(document.getElementById('u-satis').value) || 0;
+  if (satis <= 0) { toast('❌ Satış fiyatı giriniz!', 'error'); return; }
+
+  const us = gU();
+  const urun = {
+    id: _editUrunId || uid(),
+    barcode: document.getElementById('u-barcode').value.trim() || uid().toUpperCase().slice(0,8),
+    ad, kat: document.getElementById('u-kat').value,
+    birim: document.getElementById('u-birim').value,
+    alis, satis,
+    stok: parseInt(document.getElementById('u-stok').value) || 0,
+    minStok: parseInt(document.getElementById('u-minstok').value) || 5,
+    kdv: parseInt(document.getElementById('u-kdv').value) || 18,
+    not: document.getElementById('u-not').value.trim(),
+    createdAt: _editUrunId ? (us.find(x=>x.id===_editUrunId)?.createdAt || now()) : now(),
+  };
+
+  if (_editUrunId) {
+    const i = us.findIndex(x => x.id === _editUrunId);
+    us[i] = urun;
+    toast('✅ Ürün güncellendi.', 'success');
+  } else {
+    us.push(urun);
+    toast('✅ Ürün eklendi.', 'success');
+  }
+  W(K.URUNLER, us);
+  closeModal('modal-urun');
+  renderUrunler();
+  refreshTopBar();
+}
+
+function deleteUrun(id) {
+  if (!confirm('Bu ürünü silmek istiyor musunuz? Stok hareketleri korunur.')) return;
+  const us = gU().filter(x => x.id !== id);
+  W(K.URUNLER, us);
+  renderUrunler();
+  toast('🗑 Ürün silindi.', 'warn');
+}
+
+// HTML özel karakter escape yardımcısı
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+// Kategori badge sınıfı seçici
+const katBadge = kat => ({
+  'İçecek':'badge-icecek',
+  'Yiyecek':'badge-yiyecek',
+  'Sigara & Tütün':'badge-sigara',
+  'Temizlik':'badge-temizlik',
+  'Kırtasiye':'badge-kirtasiye',
+})[kat] || 'badge-diger';
+
+function renderUrunler() {
+  const ara = document.getElementById('urun-ara').value.toLowerCase();
+  const kat = document.getElementById('urun-kat-filtre').value;
+  let us = gU().filter(u =>
+    (!ara || u.ad.toLowerCase().includes(ara) || u.barcode.toLowerCase().includes(ara)) &&
+    (!kat || u.kat === kat)
+  );
+  const tbody = document.getElementById('urun-tbody');
+  if (!us.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:30px;">Ürün bulunamadı.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = us.map(u => {
+    const kritik = u.stok <= u.minStok;
+    const pct = u.minStok > 0 ? Math.min(100, u.stok / (u.minStok * 3) * 100) : 100;
+    const barColor = kritik ? 'var(--red)' : u.stok < u.minStok * 2 ? 'var(--amber)' : 'var(--green)';
+    return `<tr>
+      <td><code style="font-size:10px;background:var(--surface2);padding:2px 5px;border-radius:3px;">${esc(u.barcode)}</code></td>
+      <td><strong>${esc(u.ad)}</strong>${u.not?`<br><small style="color:var(--text3)">${esc(u.not)}</small>`:''}</td>
+      <td><span class="badge ${katBadge(u.kat)}">${esc(u.kat)}</span></td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;">${fmt2(u.alis)}</td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt2(u.satis)}</td>
+      <td class="tc"><span class="badge badge-gray">%${u.kdv}</span></td>
+      <td class="tc">
+        <strong style="color:${kritik?'var(--red)':'var(--text)'}">${u.stok}</strong> ${esc(u.birim)}
+        <div class="stok-bar"><div class="stok-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+      </td>
+      <td class="tc" style="color:var(--text3);">${u.minStok}</td>
+      <td class="tc">${kritik?'<span class="badge badge-red">⚠️ Kritik</span>':'<span class="badge badge-green">✅ Normal</span>'}</td>
+      <td class="tc" style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-xs" onclick="openUrunModal('${u.id}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteUrun('${u.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function filterUrunler() { renderUrunler(); }
+
+// ════════════════════════════════════════════════════════════
+// STOK SAYIMI
+// ════════════════════════════════════════════════════════════
+function openSayimModal() {
+  const us = gU();
+  const tbody = document.getElementById('sayim-tbody');
+  tbody.innerHTML = us.map((u, i) => `
+    <tr>
+      <td><strong>${u.ad}</strong></td>
+      <td class="tc">${u.stok} ${u.birim}</td>
+      <td class="tc"><input type="number" min="0" value="${u.stok}" id="sayim-${u.id}" style="width:70px;text-align:center;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:4px;font-size:12px;"></td>
+      <td class="tc" id="sayim-fark-${u.id}" style="font-family:'JetBrains Mono',monospace;">0</td>
+    </tr>
+  `).join('');
+  // live fark hesapla
+  us.forEach(u => {
+    const inp = document.getElementById(`sayim-${u.id}`);
+    if (inp) inp.addEventListener('input', () => {
+      const fark = parseInt(inp.value||0) - u.stok;
+      const fd = document.getElementById(`sayim-fark-${u.id}`);
+      fd.textContent = (fark > 0 ? '+' : '') + fark;
+      fd.style.color = fark === 0 ? 'var(--text3)' : fark > 0 ? 'var(--green)' : 'var(--red)';
+    });
+  });
+  openModal('modal-sayim');
+}
+
+function saveSayim() {
+  const us = gU();
+  const sh = gSH();
+  let changed = 0;
+  us.forEach(u => {
+    const inp = document.getElementById(`sayim-${u.id}`);
+    if (!inp) return;
+    const yeniStok = parseInt(inp.value) || 0;
+    if (yeniStok !== u.stok) {
+      const fark = yeniStok - u.stok;
+      sh.push({ id: uid(), tarih: now(), urunId: u.id, urunAd: u.ad, tip: 'SAYIM', giris: fark > 0 ? fark : 0, cikis: fark < 0 ? Math.abs(fark) : 0, sonStok: yeniStok, aciklama: 'Stok sayım düzeltmesi' });
+      u.stok = yeniStok;
+      changed++;
+    }
+  });
+  W(K.URUNLER, us);
+  W(K.STOK_HAR, sh);
+  closeModal('modal-sayim');
+  renderUrunler();
+  toast(`✅ Sayım tamamlandı. ${changed} ürün güncellendi.`, 'success');
+}
+
+// ════════════════════════════════════════════════════════════
+// MAL ALIŞI
+// ════════════════════════════════════════════════════════════
+let _alisKalemler = [];
+
+function openAlisModal() {
+  _alisKalemler = [];
+  document.getElementById('al-tarih').value = today();
+  document.getElementById('al-fatura').value = '';
+  document.getElementById('al-tedarikcj').value = '';
+  document.getElementById('al-miktar').value = '';
+  document.getElementById('al-fiyat').value = '';
+  document.getElementById('al-toplam').value = '';
+  document.getElementById('alis-kalemler').innerHTML = '';
+  document.getElementById('alis-genel-toplam').textContent = '₺0,00';
+  // Tedarikçi listesi
+  const tds = [...new Set(gAl().map(a => a.tedarikci).filter(Boolean))];
+  document.getElementById('tedarikci-list').innerHTML = tds.map(t => `<option value="${t}">`).join('');
+  // Ürün select
+  const sel = document.getElementById('al-urun');
+  sel.innerHTML = '<option value="">-- Ürün Seç --</option>' + gU().map(u => `<option value="${u.id}" data-alis="${u.alis}">${u.ad}</option>`).join('');
+  openModal('modal-alis');
+}
+
+function alUrunSec() {
+  const sel = document.getElementById('al-urun');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt?.dataset?.alis) document.getElementById('al-fiyat').value = opt.dataset.alis;
+  calcAlisToplam();
+}
+
+function calcAlisToplam() {
+  const m = parseFloat(document.getElementById('al-miktar').value) || 0;
+  const f = parseFloat(document.getElementById('al-fiyat').value) || 0;
+  document.getElementById('al-toplam').value = (m * f).toFixed(2);
+}
+
+function alisKalemEkle() {
+  const urunId = document.getElementById('al-urun').value;
+  const miktar = parseInt(document.getElementById('al-miktar').value) || 0;
+  const fiyat = parseFloat(document.getElementById('al-fiyat').value) || 0;
+  if (!urunId) { toast('❌ Ürün seçiniz!', 'error'); return; }
+  if (miktar <= 0) { toast('❌ Miktar giriniz!', 'error'); return; }
+  const u = gU().find(x => x.id === urunId);
+  if (!u) return;
+  _alisKalemler.push({ urunId, urunAd: u.ad, miktar, fiyat, toplam: miktar * fiyat });
+  renderAlisKalemler();
+  document.getElementById('al-urun').value = '';
+  document.getElementById('al-miktar').value = '';
+  document.getElementById('al-fiyat').value = '';
+  document.getElementById('al-toplam').value = '';
+}
+
+function renderAlisKalemler() {
+  const el = document.getElementById('alis-kalemler');
+  const genel = _alisKalemler.reduce((s, k) => s + k.toplam, 0);
+  el.innerHTML = _alisKalemler.length ?
+    `<table class="dt" style="font-size:11px;">
+      <thead><tr><th>Ürün</th><th class="tc">Miktar</th><th class="tc">Birim Fiyat</th><th class="tc">Toplam</th><th></th></tr></thead>
+      <tbody>${_alisKalemler.map((k,i) => `<tr>
+        <td>${k.urunAd}</td><td class="tc">${k.miktar}</td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;">${fmt2(k.fiyat)}</td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt2(k.toplam)}</td>
+        <td><button class="btn btn-danger btn-xs" onclick="_alisKalemler.splice(${i},1);renderAlisKalemler()">✕</button></td>
+      </tr>`).join('')}</tbody>
+    </table>` : '';
+  document.getElementById('alis-genel-toplam').textContent = '₺' + fmt2(genel);
+}
+
+function saveAlis() {
+  if (!_alisKalemler.length) { toast('❌ En az bir kalem giriniz!', 'error'); return; }
+  const tarih = document.getElementById('al-tarih').value || today();
+  const tedarikci = document.getElementById('al-tedarikcj').value.trim();
+  const fatura = document.getElementById('al-fatura').value.trim();
+  const us = gU();
+  const sh = gSH();
+  const als = gAl();
+
+  const faturaToplam = _alisKalemler.reduce((s, k) => s + k.toplam, 0);
+  const alisKayit = { id: uid(), tarih, tedarikci, fatura, kalemler: [..._alisKalemler], toplam: faturaToplam, createdAt: now() };
+  als.push(alisKayit);
+
+  // Stok güncelle
+  _alisKalemler.forEach(k => {
+    const u = us.find(x => x.id === k.urunId);
+    if (!u) return;
+    const eskiStok = u.stok;
+    u.stok += k.miktar;
+    if (k.fiyat > 0) u.alis = k.fiyat; // alış fiyatını güncelle
+    sh.push({ id: uid(), tarih: now(), urunId: u.id, urunAd: u.ad, tip: 'ALIS', giris: k.miktar, cikis: 0, sonStok: u.stok, aciklama: `Fatura: ${fatura || '-'} | ${tedarikci || '-'}` });
+  });
+
+  W(K.ALISLAR, als);
+  W(K.URUNLER, us);
+  W(K.STOK_HAR, sh);
+  closeModal('modal-alis');
+  renderAlislar();
+  toast('✅ Alış faturası kaydedildi.', 'success');
+  refreshTopBar();
+}
+
+function renderAlislar() {
+  const als = gAl();
+  const tbody = document.getElementById('alis-tbody');
+  let gtoplam = 0;
+  if (!als.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:30px;">Alış kaydı yok.</td></tr>';
+    document.getElementById('alis-gtoplam').textContent = '₺0,00';
+    return;
+  }
+  tbody.innerHTML = [...als].reverse().map(a => {
+    gtoplam += a.toplam;
+    return `<tr>
+      <td>${a.tarih}</td>
+      <td><code style="font-size:10px;background:var(--surface2);padding:2px 5px;border-radius:3px;">${a.fatura || '-'}</code></td>
+      <td>${a.tedarikci || '-'}</td>
+      <td style="font-size:11px;color:var(--text3);">${a.kalemler.map(k=>`${k.urunAd} (${k.miktar})`).join(', ')}</td>
+      <td class="tc">${a.kalemler.length}</td>
+      <td class="tr" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--red);">₺${fmt2(a.toplam)}</td>
+      <td class="tc"><button class="btn btn-danger btn-xs" onclick="deleteAlis('${a.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('alis-gtoplam').textContent = '₺' + fmt2(gtoplam);
+}
+
+function deleteAlis(id) {
+  if (!confirm('Bu alış kaydını silmek istiyor musunuz? Stok geri alınmaz.')) return;
+  W(K.ALISLAR, gAl().filter(a => a.id !== id));
+  renderAlislar();
+  toast('🗑 Alış kaydı silindi.', 'warn');
+}
+
+// ════════════════════════════════════════════════════════════
+// POS - SATIŞ NOKTASI
+// ════════════════════════════════════════════════════════════
+let _cart = [];
+let _posKat = '';
+let _payMethod = 'nakit';
+
+function renderPOS() {
+  const us = gU();
+  // Kategoriler
+  const kats = [...new Set(us.map(u => u.kat))];
+  const catsEl = document.getElementById('pos-cats');
+    const katRc = {'İçecek':'#00e5ff','Yiyecek':'#00ff41','Sigara & Tütün':'#ff0044','Temizlik':'#bf40ff','Kırtasiye':'#ffd700','Diğer':'#ff1493'};
+    catsEl.innerHTML = `<div class="pos-cat-btn ${_posKat===''?'active':''}" onclick="setPosKat('')">Tümü</div>` +
+      kats.map(k => `<div class="pos-cat-btn ${_posKat===k?'active':''}" onclick="setPosKat('${k}')" ${_posKat!==k?`style="color:${katRc[k]||'var(--text)'};"`:''}>${k}</div>`).join('');
+  // Ürünler
+  const ara = document.getElementById('pos-ara').value.toLowerCase();
+  let filtered = _posKat ? us.filter(u => u.kat === _posKat) : us;
+  if (ara) filtered = filtered.filter(u => u.ad.toLowerCase().includes(ara) || (u.barcode||'').toLowerCase().includes(ara));
+  const grid = document.getElementById('pos-urunler');
+  grid.innerHTML = filtered.map(u => {
+    const icons = { 'İçecek':'☕','Yiyecek':'🍞','Sigara & Tütün':'🚬','Temizlik':'🧹','Kırtasiye':'📎','Diğer':'📦' };
+    const tukendi = u.stok <= 0;
+    const katPos = {'İçecek':'pos-prod-icecek','Yiyecek':'pos-prod-yiyecek','Sigara & Tütün':'pos-prod-sigara','Temizlik':'pos-prod-temizlik','Kırtasiye':'pos-prod-kirtasiye'}[u.kat]||'pos-prod-diger';
+    return `<div class="pos-prod ${katPos} ${tukendi?'out':''}" onclick="${tukendi?'':'addToCart(\''+u.id+'\')'}" title="${esc(u.ad)}">
+      <div class="pp-icon">${icons[u.kat]||'📦'}</div>
+      <div class="pp-name">${esc(u.ad)}</div>
+      <div class="pp-price">₺${fmt2(u.satis)}</div>
+      <div class="pp-stok">${tukendi?'<span style="color:var(--red)">Tükendi</span>':`Stok: ${u.stok}`}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Bu kategoride ürün yok.</div>';
+  // Veresiye kişiler
+  const kSel = document.getElementById('pos-veresiye-kisi');
+  kSel.innerHTML = '<option value="">-- Normal Satış --</option>' + gKisi().map(k => `<option value="${k.id}">${k.rutbe ? k.rutbe + ' ' : ''}${k.ad}</option>`).join('');
+  kSel.onchange = () => {
+    if (kSel.value) selectPay('veresiye');
+    else selectPay('nakit');
+  };
+  renderCart();
+}
+
+function scanBarcode(barkod) {
+  if (!barkod) return;
+  const u = gU().find(x => x.barcode && x.barcode.toLowerCase() === barkod.trim().toLowerCase());
+  if (!u) { toast('⚠️ Barkod eşleşmedi: ' + barkod, 'warn'); return; }
+  if (u.stok <= 0) { toast('⚠️ ' + u.ad + ' stokta yok!', 'warn'); return; }
+  addToCart(u.id);
+  toast('✅ ' + u.ad + ' sepete eklendi', 'success');
+}
+
+function setPosKat(kat) {
+  _posKat = kat;
+  renderPOS();
+}
+
+function addToCart(urunId) {
+  const u = gU().find(x => x.id === urunId);
+  if (!u || u.stok <= 0) return;
+  const exist = _cart.find(c => c.urunId === urunId);
+  if (exist) {
+    if (exist.qty >= u.stok) { toast('⚠️ Stok yetersiz!', 'warn'); return; }
+    exist.qty++;
+  } else {
+    _cart.push({ urunId, ad: u.ad, satis: u.satis, alis: u.alis, kdv: u.kdv, qty: 1 });
+  }
+  renderCart();
+}
+
+function updateCartQty(urunId, delta) {
+  const idx = _cart.findIndex(c => c.urunId === urunId);
+  if (idx < 0) return;
+  const u = gU().find(x => x.id === urunId);
+  _cart[idx].qty += delta;
+  if (_cart[idx].qty <= 0) _cart.splice(idx, 1);
+  else if (u && _cart[idx].qty > u.stok) { _cart[idx].qty = u.stok; toast('⚠️ Stok sınırına ulaşıldı!', 'warn'); }
+  renderCart();
+}
+
+function clearCart() {
+  _cart = [];
+  renderCart();
+}
+
+function renderCart() {
+  const el = document.getElementById('cart-items');
+  if (!_cart.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;margin-top:30px;">Sepet boş</div>';
+    document.getElementById('cart-subtotal').textContent = '₺0,00';
+    document.getElementById('cart-kdv').textContent = '₺0,00';
+    document.getElementById('cart-total').textContent = '₺0,00';
+    return;
+  }
+  const ayar = gAyar();
+  let subtotal = 0, totalKdv = 0;
+  el.innerHTML = _cart.map(c => {
+    const itemTotal = c.satis * c.qty;
+    const kdvTutar = ayar.kdvDahil === '1' ? itemTotal - itemTotal / (1 + c.kdv / 100) : itemTotal * c.kdv / 100;
+    subtotal += itemTotal;
+    totalKdv += kdvTutar;
+    return `<div class="cart-item">
+      <div class="ci-name">${c.ad}</div>
+      <div class="ci-price">₺${fmt2(c.satis)}</div>
+      <div class="cart-qty">
+        <button onclick="updateCartQty('${c.urunId}',-1)">−</button>
+        <span>${c.qty}</span>
+        <button onclick="updateCartQty('${c.urunId}',1)">+</button>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;min-width:60px;text-align:right;">₺${fmt2(itemTotal)}</div>
+    </div>`;
+  }).join('');
+  const grandTotal = ayar.kdvDahil === '1' ? subtotal : subtotal + totalKdv;
+  document.getElementById('cart-subtotal').textContent = '₺' + fmt2(subtotal);
+  document.getElementById('cart-kdv').textContent = '₺' + fmt2(totalKdv);
+  document.getElementById('cart-total').textContent = '₺' + fmt2(grandTotal);
+}
+
+function selectPay(method) {
+  _payMethod = method;
+  ['nakit','kart','veresiye','kart2'].forEach(m => {
+    document.getElementById('pay-' + m)?.classList.toggle('selected', m === method);
+  });
+  document.getElementById('nakit-geri').style.display = method === 'nakit' ? 'block' : 'none';
+}
+
+function calcUstluk() {
+  const total = parseFloat(document.getElementById('cart-total').textContent.replace('₺','').replace(',','.')) || 0;
+  const alinan = parseFloat(document.getElementById('nakit-alinan').value) || 0;
+  const ustu = alinan - total;
+  const el = document.getElementById('nakit-ustu');
+  el.textContent = '₺' + fmt2(Math.max(0, ustu));
+  el.style.color = ustu < 0 ? 'var(--red)' : 'var(--green)';
+}
+
+function completeSale() {
+  if (!_cart.length) { toast('❌ Sepet boş!', 'error'); return; }
+  const totalEl = document.getElementById('cart-total').textContent.replace('₺','').replace(',','.');
+  const total = parseFloat(totalEl) || 0;
+
+  // Veresiye kontrolü
+  let kisiId = null, kisiAd = '';
+  if (_payMethod === 'veresiye') {
+    kisiId = document.getElementById('pos-veresiye-kisi').value;
+    if (!kisiId) { toast('❌ Veresiye için kişi seçiniz!', 'error'); return; }
+    const kisi = gKisi().find(k => k.id === kisiId);
+    kisiAd = kisi?.ad || '';
+    // Limit kontrol
+    const mevcutBorc = gVer().filter(v => v.kisiId === kisiId && !v.odendi).reduce((s, v) => s + v.tutar, 0);
+    if (kisi?.limit > 0 && mevcutBorc + total > kisi.limit) {
+      toast(`⚠️ ${kisiAd} kredi limitini (₺${fmt2(kisi.limit)}) aşıyor!`, 'warn');
+    }
+  }
+
+  const us = gU();
+  const sh = gSH();
+  const sats = gSat();
+  const kdvEl = document.getElementById('cart-kdv').textContent.replace('₺','').replace(',','.');
+  const kdvTutar = parseFloat(kdvEl) || 0;
+
+  const satisFisi = {
+    id: uid(),
+    fisNo: 'F' + Date.now().toString().slice(-6),
+    tarih: now(),
+    kalemler: _cart.map(c => ({ ...c })),
+    toplam: total,
+    kdv: kdvTutar,
+    odeme: _payMethod,
+    kisiId, kisiAd,
+  };
+  sats.push(satisFisi);
+
+  // Stok düş
+  _cart.forEach(c => {
+    const u = us.find(x => x.id === c.urunId);
+    if (!u) return;
+    u.stok = Math.max(0, u.stok - c.qty);
+    sh.push({ id: uid(), tarih: now(), urunId: u.id, urunAd: u.ad, tip: 'SATIS', giris: 0, cikis: c.qty, sonStok: u.stok, aciklama: `Fiş: ${satisFisi.fisNo}` });
+  });
+
+  // Veresiye kayıt
+  if (_payMethod === 'veresiye' && kisiId) {
+    const vers = gVer();
+    vers.push({ id: uid(), kisiId, kisiAd, fisId: satisFisi.id, fisNo: satisFisi.fisNo, tutar: total, tarih: now(), odendi: false, aciklama: _cart.map(c => c.ad + 'x' + c.qty).join(', ') });
+    W(K.VERESIYE, vers);
+  }
+
+  W(K.SATISLAR, sats);
+  W(K.URUNLER, us);
+  W(K.STOK_HAR, sh);
+
+  toast(`✅ Satış tamamlandı! Fiş: ${satisFisi.fisNo} | ₺${fmt2(total)}`, 'success');
+  _cart = [];
+  _payMethod = 'nakit';
+  const kSelEl = document.getElementById('pos-veresiye-kisi');
+  if (kSelEl) kSelEl.value = '';
+  selectPay('nakit');
+  renderCart();
+  renderPOS();
+  refreshTopBar();
+  updateVeresiyeBadge();
+}
+
+// ════════════════════════════════════════════════════════════
+// SATIŞ GEÇMİŞİ
+// ════════════════════════════════════════════════════════════
+function renderSatislar() {
+  const basT = document.getElementById('satis-bas-tarih').value;
+  const bitT = document.getElementById('satis-bit-tarih').value;
+  const oF = document.getElementById('satis-odeme-filtre').value;
+  let sats = gSat().filter(s => {
+    const d = s.tarih.slice(0,10);
+    if (basT && d < basT) return false;
+    if (bitT && d > bitT) return false;
+    if (oF && s.odeme !== oF) return false;
+    return true;
+  });
+  sats = [...sats].reverse();
+
+  let gtoplam = 0, gkdv = 0, gnakit = 0, gkart = 0, gver = 0;
+  const tbody = document.getElementById('satis-tbody');
+  if (!sats.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:30px;">Satış kaydı yok.</td></tr>';
+  } else {
+    tbody.innerHTML = sats.map(s => {
+      if (s.iptal) return '';
+      gtoplam += s.toplam; gkdv += s.kdv;
+      if (s.odeme === 'nakit') gnakit += s.toplam;
+      else if (s.odeme === 'kart' || s.odeme === 'kart2') gkart += s.toplam;
+      else if (s.odeme === 'veresiye') gver += s.toplam;
+      const odemeRenk = {nakit:'badge-green',kart:'badge-blue',kart2:'badge-purple',veresiye:'badge-red'};
+      const odemeLbl = {nakit:'💵 Nakit',kart:'💳 Kart',kart2:'📱 QR',veresiye:'📒 Veresiye'};
+      return `<tr>
+        <td style="font-size:11px;">${new Date(s.tarih).toLocaleString('tr-TR')}</td>
+        <td><code style="font-size:10px;background:var(--surface2);padding:2px 5px;border-radius:3px;">${s.fisNo}</code></td>
+        <td style="font-size:11px;color:var(--text3);">${s.kalemler.map(k=>`${k.ad}×${k.qty}`).join(', ')}</td>
+        <td class="tr" style="font-family:'JetBrains Mono',monospace;font-weight:700;">₺${fmt2(s.toplam)}</td>
+        <td class="tr" style="font-family:'JetBrains Mono',monospace;color:var(--text3);">₺${fmt2(s.kdv)}</td>
+        <td><span class="badge ${odemeRenk[s.odeme]||'badge-gray'}">${odemeLbl[s.odeme]||s.odeme}</span></td>
+        <td style="font-size:11px;">${s.kisiAd||'-'}</td>
+        <td class="tc"><button class="btn btn-danger btn-xs" onclick="iptalSatis('${s.id}')">İptal</button></td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('satis-gtoplam').textContent = '₺' + fmt2(gtoplam);
+  document.getElementById('satis-gkdv').textContent = '₺' + fmt2(gkdv);
+
+  const kpis = document.getElementById('satis-kpis');
+  kpis.innerHTML = `
+    <div class="kpi kpi-blue"><div class="kpi-icon">🧾</div><div class="kpi-val">₺${fmt2(gtoplam)}</div><div class="kpi-lbl">Toplam Ciro</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">💵</div><div class="kpi-val">₺${fmt2(gnakit)}</div><div class="kpi-lbl">Nakit</div></div>
+    <div class="kpi kpi-purple"><div class="kpi-icon">💳</div><div class="kpi-val">₺${fmt2(gkart)}</div><div class="kpi-lbl">Kart/QR</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">📒</div><div class="kpi-val">₺${fmt2(gver)}</div><div class="kpi-lbl">Veresiye</div></div>
+  `;
+}
+
+function iptalSatis(id) {
+  if (!confirm('Bu satışı iptal etmek istiyor musunuz? Stok geri yüklenmez.')) return;
+  const sats = gSat();
+  const s = sats.find(x => x.id === id);
+  if (s) s.iptal = true;
+  W(K.SATISLAR, sats);
+  renderSatislar();
+  toast('🔴 Satış iptal edildi.', 'warn');
+}
+
+// ════════════════════════════════════════════════════════════
+// VERESİYE
+// ════════════════════════════════════════════════════════════
+function openKisiModal(id = null) {
+  document.getElementById('kisi-ad').value = '';
+  document.getElementById('kisi-rutbe').value = '';
+  document.getElementById('kisi-tel').value = '';
+  document.getElementById('kisi-limit').value = '';
+  openModal('modal-kisi');
+  setTimeout(() => document.getElementById('kisi-ad').focus(), 100);
+}
+
+function saveKisi() {
+  const ad = document.getElementById('kisi-ad').value.trim();
+  if (!ad) { toast('❌ Ad zorunludur!', 'error'); return; }
+  const kisiler = gKisi();
+  kisiler.push({ id: uid(), ad, rutbe: document.getElementById('kisi-rutbe').value.trim(), tel: document.getElementById('kisi-tel').value.trim(), limit: parseFloat(document.getElementById('kisi-limit').value) || 0, createdAt: now() });
+  W(K.KISILER, kisiler);
+  closeModal('modal-kisi');
+  renderVeresiye();
+  toast('✅ Kişi eklendi.', 'success');
+}
+
+let _selKisiId = null;
+
+function renderVeresiye() {
+  const kisiler = gKisi();
+  const vers = gVer();
+
+  // KPI
+  const toplamBorc = vers.filter(v => !v.odendi).reduce((s, v) => s + v.tutar, 0);
+  const borc10 = vers.filter(v => !v.odendi).length;
+  const kpis = document.getElementById('veresiye-kpis');
+  kpis.innerHTML = `
+    <div class="kpi kpi-red"><div class="kpi-icon">💸</div><div class="kpi-val">₺${fmt2(toplamBorc)}</div><div class="kpi-lbl">Toplam Açık Borç</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-icon">📋</div><div class="kpi-val">${borc10}</div><div class="kpi-lbl">Açık İşlem</div></div>
+    <div class="kpi kpi-blue"><div class="kpi-icon">👥</div><div class="kpi-val">${kisiler.length}</div><div class="kpi-lbl">Kayıtlı Kişi</div></div>
+  `;
+
+  // Kişi kartları
+  const el = document.getElementById('veresiye-kisiler');
+  if (!kisiler.length) {
+    el.innerHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:30px;">Kişi kaydı yok. ➕ Kişi ekleyin.</div>';
+    return;
+  }
+
+  el.innerHTML = kisiler.map(k => {
+    const kBorc = vers.filter(v => v.kisiId === k.id && !v.odendi).reduce((s, v) => s + v.tutar, 0);
+    const kOdenen = vers.filter(v => v.kisiId === k.id && v.odendi).reduce((s, v) => s + (v.odemeM || v.tutar), 0);
+    const isSelected = _selKisiId === k.id;
+    return `<div class="veresiye-card mb16 ${isSelected ? 'border-primary' : ''}" onclick="selectKisi('${k.id}')" style="${isSelected ? 'border-color:var(--primary);background:var(--primary-dim);' : ''}">
+      <div class="vc-header">
+        <div>
+          <div class="vc-name">${k.ad}</div>
+          <div class="vc-sub">${k.rutbe || ''} ${k.tel ? '· ' + k.tel : ''}</div>
+        </div>
+        <div class="vc-amount">₺${fmt2(kBorc)}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+        <span style="font-size:10px;color:var(--text3);">Ödenen: ₺${fmt2(kOdenen)} · Limit: ${k.limit > 0 ? '₺' + fmt2(k.limit) : 'Sınırsız'}</span>
+        <div style="display:flex;gap:4px;">
+          ${kBorc > 0 ? `<button class="btn btn-success btn-xs" onclick="event.stopPropagation();openOdemeModal('${k.id}')">💳 Ödeme Al</button>` : '<span class="badge badge-green">✅ Borçsuz</span>'}
+          <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();deleteKisi('${k.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (_selKisiId) renderKisiDetay(_selKisiId);
+  updateVeresiyeBadge();
+}
+
+function selectKisi(kisiId) {
+  _selKisiId = kisiId;
+  renderVeresiye();
+}
+
+function renderKisiDetay(kisiId) {
+  const kisi = gKisi().find(k => k.id === kisiId);
+  const vers = gVer().filter(v => v.kisiId === kisiId);
+  const el = document.getElementById('veresiye-detay');
+  if (!kisi) { el.innerHTML = ''; return; }
+
+  const acik = vers.filter(v => !v.odendi);
+  const kapali = vers.filter(v => v.odendi);
+  el.innerHTML = `
+    <div style="font-weight:700;font-size:14px;margin-bottom:10px;">${kisi.ad} — İşlem Geçmişi</div>
+    ${acik.length ? `
+    <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Açık Borçlar</div>
+    ${acik.map(v => `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--red-dim);border:1px solid rgba(220,38,38,.15);border-radius:6px;margin-bottom:5px;font-size:12px;">
+      <div><div style="font-weight:600;">${v.fisNo || v.aciklama}</div><div style="font-size:10px;color:var(--text3);">${new Date(v.tarih).toLocaleDateString('tr-TR')} · ${v.aciklama}</div></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--red);">₺${fmt2(v.tutar)}</div>
+    </div>`).join('')}` : ''}
+    ${kapali.length ? `
+    <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:10px;">Ödenmiş</div>
+    ${kapali.slice(-5).map(v => `<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--green-dim);border:1px solid rgba(22,163,74,.15);border-radius:6px;margin-bottom:4px;font-size:11px;">
+      <span>${v.fisNo || '-'} · ${new Date(v.tarih).toLocaleDateString('tr-TR')}</span>
+      <span style="font-family:'JetBrains Mono',monospace;color:var(--green);">₺${fmt2(v.tutar)}</span>
+    </div>`).join('')}` : ''}
+    ${!acik.length && !kapali.length ? '<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">Henüz işlem yok.</div>' : ''}
+  `;
+}
+
+function openOdemeModal(kisiId) {
+  const kisi = gKisi().find(k => k.id === kisiId);
+  const vers = gVer();
+  const borc = vers.filter(v => v.kisiId === kisiId && !v.odendi).reduce((s, v) => s + v.tutar, 0);
+  document.getElementById('odeme-kisi-adi').textContent = kisi?.ad || '';
+  document.getElementById('odeme-toplam-borc').value = borc.toFixed(2);
+  document.getElementById('odeme-miktar').value = borc.toFixed(2);
+  document.getElementById('odeme-kalan').value = '0.00';
+  document.getElementById('odeme-tarih').value = today();
+  document.getElementById('odeme-not').value = '';
+  document.getElementById('modal-odeme').dataset.kisiId = kisiId;
+  openModal('modal-odeme');
+}
+
+function calcKalan() {
+  const toplam = parseFloat(document.getElementById('odeme-toplam-borc').value) || 0;
+  const miktar = parseFloat(document.getElementById('odeme-miktar').value) || 0;
+  document.getElementById('odeme-kalan').value = Math.max(0, toplam - miktar).toFixed(2);
+}
+
+function saveOdeme() {
+  const kisiId = document.getElementById('modal-odeme').dataset.kisiId;
+  const miktar = parseFloat(document.getElementById('odeme-miktar').value) || 0;
+  if (miktar <= 0) { toast('❌ Ödeme miktarı giriniz!', 'error'); return; }
+  const vers = gVer();
+  let kalan = miktar;
+  vers.filter(v => v.kisiId === kisiId && !v.odendi).forEach(v => {
+    if (kalan <= 0) return;
+    if (kalan >= v.tutar) {
+      v.odendi = true;
+      v.odemeM = v.tutar;
+      v.odemeTarih = document.getElementById('odeme-tarih').value;
+      kalan -= v.tutar;
+    } else {
+      v.tutar -= kalan;
+      kalan = 0;
+    }
+  });
+  W(K.VERESIYE, vers);
+  closeModal('modal-odeme');
+  renderVeresiye();
+  toast(`✅ ₺${fmt2(miktar)} ödeme alındı.`, 'success');
+  refreshTopBar();
+}
+
+function deleteKisi(id) {
+  if (!confirm('Bu kişiyi silmek istiyor musunuz?')) return;
+  W(K.KISILER, gKisi().filter(k => k.id !== id));
+  W(K.VERESIYE, gVer().filter(v => v.kisiId !== id));
+  if (_selKisiId === id) _selKisiId = null;
+  renderVeresiye();
+  toast('🗑 Kişi silindi.', 'warn');
+}
+
+function updateVeresiyeBadge() {
+  const acik = gVer().filter(v => !v.odendi).length;
+  const badge = document.getElementById('veresiye-badge');
+  if (acik > 0) { badge.textContent = acik; badge.style.display = 'inline'; }
+  else badge.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+// STOK HAREKETLERİ
+// ════════════════════════════════════════════════════════════
+function renderStokHareketler() {
+  const uF = document.getElementById('sh-urun-filtre').value;
+  const tF = document.getElementById('sh-tip-filtre').value;
+
+  // Filtre select güncelle
+  const sel = document.getElementById('sh-urun-filtre');
+  const mevcut = sel.value;
+  sel.innerHTML = '<option value="">Tüm Ürünler</option>' + gU().map(u => `<option value="${u.id}" ${u.id===mevcut?'selected':''}>${u.ad}</option>`).join('');
+
+  let hs = gSH().filter(h => (!uF || h.urunId === uF) && (!tF || h.tip === tF));
+  hs = [...hs].reverse().slice(0, 300);
+
+  const tipRenk = { ALIS: 'badge-green', SATIS: 'badge-red', SAYIM: 'badge-amber' };
+  const tbody = document.getElementById('sh-tbody');
+  if (!hs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:30px;">Hareket kaydı yok.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = hs.map(h => `<tr>
+    <td style="font-size:11px;">${new Date(h.tarih).toLocaleString('tr-TR')}</td>
+    <td><strong>${h.urunAd}</strong></td>
+    <td><span class="badge ${tipRenk[h.tip]||'badge-gray'}">${h.tip}</span></td>
+    <td class="tc" style="color:var(--green);font-weight:700;">${h.giris || '-'}</td>
+    <td class="tc" style="color:var(--red);font-weight:700;">${h.cikis || '-'}</td>
+    <td class="tc" style="font-family:'JetBrains Mono',monospace;">${h.sonStok}</td>
+    <td style="font-size:11px;color:var(--text3);">${h.aciklama || ''}</td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// KASA & RAPORLAR
+// ════════════════════════════════════════════════════════════
+let _chartOdeme = null, _chartKar = null;
+
+function renderKasa() {
+  const donem = document.getElementById('kasa-donem').value;
+  const now2 = new Date();
+  let sats = gSat().filter(s => !s.iptal);
+
+  if (donem === 'bugun') {
+    const t = today();
+    sats = sats.filter(s => s.tarih.slice(0,10) === t);
+  } else if (donem === 'bu_hafta') {
+    const week = new Date(now2); week.setDate(now2.getDate() - 7);
+    sats = sats.filter(s => new Date(s.tarih) >= week);
+  } else if (donem === 'bu_ay') {
+    const ay = today().slice(0,7);
+    sats = sats.filter(s => s.tarih.slice(0,7) === ay);
+  }
+
+  const totalCiro = sats.reduce((s, x) => s + x.toplam, 0);
+  const totalKdv = sats.reduce((s, x) => s + x.kdv, 0);
+  const us = gU();
+
+  // Kâr hesapla
+  let totalKar = 0;
+  sats.forEach(s => {
+    s.kalemler.forEach(k => {
+      const u = us.find(x => x.id === k.urunId);
+      if (u) totalKar += (u.satis - u.alis) * k.qty;
+    });
+  });
+
+  // Mal alış
+  const als = gAl();
+  let alisTopla = 0;
+  if (donem === 'bugun') {
+    alisTopla = als.filter(a => a.tarih === today()).reduce((s,a) => s+a.toplam, 0);
+  } else if (donem === 'bu_ay') {
+    alisTopla = als.filter(a => a.tarih.slice(0,7) === today().slice(0,7)).reduce((s,a) => s+a.toplam, 0);
+  } else {
+    alisTopla = als.reduce((s,a) => s+a.toplam, 0);
+  }
+
+  const kpis = document.getElementById('kasa-kpis');
+  kpis.innerHTML = `
+    <div class="kpi kpi-blue"><div class="kpi-icon">💰</div><div class="kpi-val">₺${fmt2(totalCiro)}</div><div class="kpi-lbl">Toplam Ciro</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">📈</div><div class="kpi-val">₺${fmt2(totalKar)}</div><div class="kpi-lbl">Brüt Kâr</div><div class="kpi-sub">${totalCiro>0?'%'+((totalKar/totalCiro)*100).toFixed(1):'-'} marj</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">🚚</div><div class="kpi-val">₺${fmt2(alisTopla)}</div><div class="kpi-lbl">Alış Gideri</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-icon">🧾</div><div class="kpi-val">₺${fmt2(totalKdv)}</div><div class="kpi-lbl">KDV</div></div>
+    <div class="kpi kpi-cyan"><div class="kpi-icon">🛒</div><div class="kpi-val">${sats.length}</div><div class="kpi-lbl">İşlem Sayısı</div></div>
+    <div class="kpi kpi-purple"><div class="kpi-icon">💵</div><div class="kpi-val">₺${fmt2(sats.length>0?totalCiro/sats.length:0)}</div><div class="kpi-lbl">Ort. Sepet</div></div>
+  `;
+
+  // Ödeme dağılımı chart
+  const odemeGrp = {nakit:0,kart:0,veresiye:0,kart2:0};
+  sats.forEach(s => { odemeGrp[s.odeme] = (odemeGrp[s.odeme]||0) + s.toplam; });
+  if (_chartOdeme) _chartOdeme.destroy();
+  const ctxO = document.getElementById('chart-odeme').getContext('2d');
+  _chartOdeme = new Chart(ctxO, { type: 'doughnut', data: {
+    labels: ['Nakit','Kart','Veresiye','QR/Havale'],
+    datasets: [{ data: [odemeGrp.nakit,odemeGrp.kart,odemeGrp.veresiye,odemeGrp.kart2], backgroundColor: ['#22c55e','#3b82f6','#ef4444','#8b5cf6'], borderWidth: 2, borderColor: '#fff' }]
+  }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
+
+  // Kâr trendi (son 7 gün)
+  const days = Array.from({length:7},(_, i) => { const d=new Date(); d.setDate(d.getDate()-6+i); return d.toISOString().slice(0,10); });
+  const gunKar = days.map(d => {
+    const gs = gSat().filter(s => !s.iptal && s.tarih.slice(0,10) === d);
+    let k = 0;
+    gs.forEach(s => s.kalemler.forEach(c => { const u = us.find(x=>x.id===c.urunId); if(u) k += (u.satis-u.alis)*c.qty; }));
+    return k;
+  });
+  if (_chartKar) _chartKar.destroy();
+  const ctxK = document.getElementById('chart-kar').getContext('2d');
+  _chartKar = new Chart(ctxK, { type: 'bar', data: {
+    labels: days.map(d => { const dd=new Date(d); return dd.getDate()+'/'+(dd.getMonth()+1); }),
+    datasets: [{ label: 'Kâr (₺)', data: gunKar, backgroundColor: 'rgba(22,163,74,.7)', borderColor: 'var(--green)', borderWidth: 2, borderRadius: 5 }]
+  }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } } } });
+
+  // Top ürünler
+  const satisMap = {};
+  gSat().filter(s=>!s.iptal).forEach(s => {
+    s.kalemler.forEach(k => {
+      if (!satisMap[k.urunId]) satisMap[k.urunId] = { ad: k.ad, adet: 0, ciro: 0, kar: 0 };
+      satisMap[k.urunId].adet += k.qty;
+      satisMap[k.urunId].ciro += k.satis * k.qty;
+      satisMap[k.urunId].kar += (k.satis - k.alis) * k.qty;
+    });
+  });
+  const topUs = Object.values(satisMap).sort((a,b) => b.ciro - a.ciro).slice(0,10);
+  document.getElementById('top-urunler').innerHTML = topUs.map((u, i) => `<tr>
+    <td style="font-weight:700;color:var(--text3);">${i+1}</td>
+    <td><strong>${u.ad}</strong></td>
+    <td class="tc">${u.adet}</td>
+    <td class="tr" style="font-family:'JetBrains Mono',monospace;">₺${fmt2(u.ciro)}</td>
+    <td class="tr" style="font-family:'JetBrains Mono',monospace;color:var(--green);">₺${fmt2(u.kar)}</td>
+    <td class="tc"><span class="badge ${u.kar/u.ciro>.2?'badge-green':u.kar/u.ciro>.1?'badge-amber':'badge-red'}">${u.ciro>0?(u.kar/u.ciro*100).toFixed(1)+'%':'-'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px;">Satış yok.</td></tr>';
+
+  // Kasa özeti
+  const nakit = sats.filter(s=>s.odeme==='nakit').reduce((s,x)=>s+x.toplam,0);
+  const kart = sats.filter(s=>s.odeme==='kart'||s.odeme==='kart2').reduce((s,x)=>s+x.toplam,0);
+  const veresiye = sats.filter(s=>s.odeme==='veresiye').reduce((s,x)=>s+x.toplam,0);
+  document.getElementById('kasa-ozet').innerHTML = [
+    ['💵 Nakit Tahsilat', nakit, 'green'],
+    ['💳 Kart/QR Tahsilat', kart, 'blue'],
+    ['📒 Veresiye (tahsil edilmedi)', veresiye, 'red'],
+    ['🧾 KDV Yükümlülüğü', totalKdv, 'amber'],
+    ['📈 Net Kâr (tahmini)', totalKar - totalKdv * 0.2, 'purple'],
+  ].map(([l,v,c]) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+    <span style="font-size:12px;">${l}</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--${c});">₺${fmt2(v)}</span>
+  </div>`).join('');
+
+  // Stok değerleme
+  const stokAlis = us.reduce((s,u) => s + u.alis * u.stok, 0);
+  const stokSatis = us.reduce((s,u) => s + u.satis * u.stok, 0);
+  document.getElementById('stok-deger').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);"><span>Alış Değeri</span><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--red);">₺${fmt2(stokAlis)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);"><span>Satış Değeri</span><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);">₺${fmt2(stokSatis)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);"><span>Potansiyel Kâr</span><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">₺${fmt2(stokSatis-stokAlis)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:9px 0;"><span>Toplam SKU</span><span style="font-family:'JetBrains Mono',monospace;font-weight:700;">${us.length}</span></div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+let _chartSatis = null, _chartKat = null;
+
+function renderDashboard() {
+  const us = gU();
+  const sats = gSat().filter(s => !s.iptal);
+  const t = today();
+
+  const gunSatis = sats.filter(s => s.tarih.slice(0,10) === t);
+  const gunCiro = gunSatis.reduce((s,x) => s + x.toplam, 0);
+  let gunKar = 0;
+  gunSatis.forEach(s => s.kalemler.forEach(k => { const u=us.find(x=>x.id===k.urunId); if(u) gunKar+=(u.satis-u.alis)*k.qty; }));
+
+  const toplam = sats.reduce((s,x) => s + x.toplam, 0);
+  const topBorc = gVer().filter(v=>!v.odendi).reduce((s,v)=>s+v.tutar, 0);
+  const kritik = us.filter(u => u.stok <= u.minStok).length;
+
+  document.getElementById('dash-kpis').innerHTML = `
+    <div class="kpi kpi-blue"><div class="kpi-icon">💰</div><div class="kpi-val">₺${fmt2(gunCiro)}</div><div class="kpi-lbl">Bugünkü Ciro</div><div class="kpi-sub">${gunSatis.length} işlem</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">📈</div><div class="kpi-val">₺${fmt2(gunKar)}</div><div class="kpi-lbl">Bugünkü Kâr</div><div class="kpi-sub">${gunCiro>0?'%'+((gunKar/gunCiro)*100).toFixed(1):'0'} marj</div></div>
+    <div class="kpi kpi-purple"><div class="kpi-icon">🧾</div><div class="kpi-val">₺${fmt2(toplam)}</div><div class="kpi-lbl">Toplam Ciro</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">📒</div><div class="kpi-val">₺${fmt2(topBorc)}</div><div class="kpi-lbl">Açık Veresiye</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-icon">⚠️</div><div class="kpi-val">${kritik}</div><div class="kpi-lbl">Kritik Stok</div></div>
+    <div class="kpi kpi-cyan"><div class="kpi-icon">📦</div><div class="kpi-val">${us.length}</div><div class="kpi-lbl">Ürün Sayısı</div></div>
+  `;
+
+  // 7 günlük satış chart
+  const days = Array.from({length:7},(_,i) => { const d=new Date(); d.setDate(d.getDate()-6+i); return d.toISOString().slice(0,10); });
+  const gunCirolar = days.map(d => sats.filter(s=>s.tarih.slice(0,10)===d).reduce((s,x)=>s+x.toplam,0));
+  if (_chartSatis) _chartSatis.destroy();
+  const ctxS = document.getElementById('chart-satis').getContext('2d');
+  const grad = ctxS.createLinearGradient(0,0,0,200);
+  grad.addColorStop(0,'rgba(37,99,235,.3)');
+  grad.addColorStop(1,'rgba(37,99,235,0)');
+  _chartSatis = new Chart(ctxS, { type: 'line', data: {
+    labels: days.map(d => { const dd=new Date(d); return dd.getDate()+'/'+(dd.getMonth()+1); }),
+    datasets: [{ label:'Ciro (₺)', data:gunCirolar, backgroundColor:grad, borderColor:'var(--primary)', fill:true, tension:.4, pointRadius:4, pointBackgroundColor:'var(--primary)' }]
+  }, options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,ticks:{font:{size:10}}}, x:{ticks:{font:{size:10}}} } } });
+
+  // Kategori dağılımı
+  const katMap = {};
+  sats.forEach(s => s.kalemler.forEach(k => { katMap[k.ad] = (katMap[k.ad]||0) + k.qty; }));
+  // Ürün kategori bazlı
+  const katCiro = {};
+  sats.forEach(s => s.kalemler.forEach(k => {
+    const u = us.find(x=>x.id===k.urunId);
+    const kat = u?.kat || 'Diğer';
+    katCiro[kat] = (katCiro[kat]||0) + k.satis * k.qty;
+  }));
+  const katLbls = Object.keys(katCiro);
+  const katVals = Object.values(katCiro);
+  const katColors = ['#3b82f6','#22c55e','#ef4444','#f59e0b','#8b5cf6','#06b6d4'];
+  if (_chartKat) _chartKat.destroy();
+  const ctxK2 = document.getElementById('chart-kategori').getContext('2d');
+  _chartKat = new Chart(ctxK2, { type: 'doughnut', data: {
+    labels: katLbls.length ? katLbls : ['Veri yok'],
+    datasets: [{ data: katVals.length ? katVals : [1], backgroundColor: katColors.slice(0, katLbls.length || 1), borderWidth:2, borderColor:'#fff' }]
+  }, options: { responsive:true, plugins:{legend:{position:'bottom',labels:{font:{size:10}}}} } });
+
+  // Kritik stok
+  const kritikUs = us.filter(u => u.stok <= u.minStok);
+  const ksEl = document.getElementById('dash-kritik-stok');
+  ksEl.innerHTML = kritikUs.length ? kritikUs.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--red-dim);border:1px solid rgba(220,38,38,.15);border-radius:6px;margin-bottom:5px;">
+      <div><div style="font-weight:600;font-size:12px;">${u.ad}</div><div style="font-size:10px;color:var(--text3);">Min: ${u.minStok} | <span class="badge ${katBadge(u.kat)}" style="font-size:9px;">${esc(u.kat)}</span></div></div>
+      <span class="badge badge-red">Stok: ${u.stok}</span>
+    </div>`).join('') : '<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px;">✅ Kritik stok yok</div>';
+
+  // Son veresiyeler
+  const son5Ver = gVer().filter(v=>!v.odendi).slice(-5).reverse();
+  const dvEl = document.getElementById('dash-veresiye');
+  dvEl.innerHTML = son5Ver.length ? son5Ver.map(v => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--amber-dim);border:1px solid rgba(217,119,6,.15);border-radius:6px;margin-bottom:5px;">
+      <div><div style="font-weight:600;font-size:12px;">${v.kisiAd}</div><div style="font-size:10px;color:var(--text3);">${new Date(v.tarih).toLocaleDateString('tr-TR')}</div></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--amber);">₺${fmt2(v.tutar)}</span>
+    </div>`).join('') : '<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px;">📒 Açık veresiye yok</div>';
+
+  // Bugünkü satışlar
+  const bsEl = document.getElementById('dash-bugun-satis');
+  if (!gunSatis.length) {
+    bsEl.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px;">Bugün satış yok.</div>';
+  } else {
+    bsEl.innerHTML = `<table class="dt"><thead><tr><th>Saat</th><th>Fiş No</th><th>Ürünler</th><th class="tc">Toplam</th><th>Ödeme</th></tr></thead><tbody>` +
+      [...gunSatis].reverse().map(s => {
+        const odemeLbl = {nakit:'💵 Nakit',kart:'💳 Kart',kart2:'📱 QR',veresiye:'📒 Veresiye'};
+        return `<tr><td style="font-size:11px;">${new Date(s.tarih).toLocaleTimeString('tr-TR').slice(0,5)}</td>
+          <td><code style="font-size:10px;">${s.fisNo}</code></td>
+          <td style="font-size:11px;color:var(--text3);">${s.kalemler.map(k=>k.ad+'×'+k.qty).join(', ')}</td>
+          <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;">₺${fmt2(s.toplam)}</td>
+          <td><span class="badge badge-${s.odeme==='nakit'?'green':s.odeme==='veresiye'?'red':'blue'}">${odemeLbl[s.odeme]||s.odeme}</span></td></tr>`;
+      }).join('') + '</tbody></table>';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// AYARLAR
+// ════════════════════════════════════════════════════════════
+function loadAyarlar() {
+  const a = gAyar();
+  document.getElementById('set-ad').value = a.ad || '';
+  document.getElementById('set-birim').value = a.birim || '';
+  document.getElementById('set-sorumlu').value = a.sorumlu || '';
+  document.getElementById('set-rutbe').value = a.rutbe || '';
+  document.getElementById('set-kdv-dahil').value = a.kdvDahil || '1';
+  document.getElementById('set-kdv-oran').value = a.kdvOran || 18;
+  document.getElementById('set-para').value = a.para || '₺';
+}
+
+function saveAyarlar() {
+  const a = {
+    ad: document.getElementById('set-ad').value,
+    birim: document.getElementById('set-birim').value,
+    sorumlu: document.getElementById('set-sorumlu').value,
+    rutbe: document.getElementById('set-rutbe').value,
+    kdvDahil: document.getElementById('set-kdv-dahil').value,
+    kdvOran: parseInt(document.getElementById('set-kdv-oran').value) || 18,
+    para: document.getElementById('set-para').value || '₺',
+  };
+  W(K.AYARLAR, a);
+  refreshTopBar();
+}
+
+function exportData() {
+  const data = {};
+  Object.values(K).forEach(k => { data[k] = S(k); });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kantin_yedek_' + today() + '.json';
+  a.click();
+  toast('✅ Veriler dışa aktarıldı.', 'success');
+}
+
+function importData(inp) {
+  const file = inp.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      Object.entries(data).forEach(([k, v]) => { if (v !== null) W(k, v); });
+      toast('✅ Veriler içe aktarıldı. Sayfa yenileniyor...', 'success');
+      setTimeout(() => location.reload(), 1200);
+    } catch { toast('❌ Geçersiz dosya!', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+function resetAll() {
+  if (!confirm('TÜM VERİLER SİLİNECEK! Bu işlem geri alınamaz. Emin misiniz?')) return;
+  if (!confirm('Son onay: Tüm ürünler, satışlar, veresiyeler ve ayarlar silinecek!')) return;
+  Object.values(K).forEach(k => localStorage.removeItem(k));
+  toast('🗑 Tüm veriler silindi.', 'warn');
+  setTimeout(() => location.reload(), 1000);
+}
+
+// ════════════════════════════════════════════════════════════
+// DEMO VERİ
+// ════════════════════════════════════════════════════════════
+function loadDemoData() {
+  if (!confirm('Demo verisi yüklensin mi? Mevcut veriler korunur.')) return;
+  const us = gU();
+  const demoUrunler = [
+    {id:uid(),barcode:'CDEM001',ad:'Çay (Bardak)',kat:'İçecek',birim:'Adet',alis:2,satis:5,stok:200,minStok:30,kdv:8,not:'Demlik çay'},
+    {id:uid(),barcode:'CDEM002',ad:'Türk Kahvesi',kat:'İçecek',birim:'Adet',alis:5,satis:12,stok:80,minStok:20,kdv:8,not:''},
+    {id:uid(),barcode:'CDEM003',ad:'Su (0.5L)',kat:'İçecek',birim:'Adet',alis:2.5,satis:5,stok:120,minStok:30,kdv:8,not:''},
+    {id:uid(),barcode:'CDEM004',ad:'Kola (330ml)',kat:'İçecek',birim:'Adet',alis:8,satis:15,stok:60,minStok:15,kdv:8,not:''},
+    {id:uid(),barcode:'CDEM005',ad:'Ayran (200ml)',kat:'İçecek',birim:'Adet',alis:5,satis:8,stok:50,minStok:15,kdv:8,not:''},
+    {id:uid(),barcode:'CDEM006',ad:'Simit',kat:'Yiyecek',birim:'Adet',alis:3,satis:6,stok:40,minStok:10,kdv:1,not:''},
+    {id:uid(),barcode:'CDEM007',ad:'Poğaça',kat:'Yiyecek',birim:'Adet',alis:6,satis:10,stok:30,minStok:10,kdv:1,not:''},
+    {id:uid(),barcode:'CDEM008',ad:'Sandviç',kat:'Yiyecek',birim:'Adet',alis:18,satis:30,stok:20,minStok:5,kdv:8,not:'Tost/ızgara'},
+    {id:uid(),barcode:'CDEM009',ad:'Bisküvi (Paket)',kat:'Yiyecek',birim:'Paket',alis:5,satis:9,stok:50,minStok:10,kdv:8,not:''},
+    {id:uid(),barcode:'CDEM010',ad:'Çikolata',kat:'Yiyecek',birim:'Adet',alis:8,satis:15,stok:40,minStok:10,kdv:8,not:''},
+    {id:uid(),barcode:'SDEM001',ad:'Sigara (Paket)',kat:'Sigara & Tütün',birim:'Paket',alis:55,satis:65,stok:3,minStok:5,kdv:18,not:''},
+    {id:uid(),barcode:'KDEM001',ad:'Tükenmez Kalem',kat:'Kırtasiye',birim:'Adet',alis:3,satis:7,stok:30,minStok:10,kdv:18,not:''},
+    {id:uid(),barcode:'TDEM001',ad:'Sabun (Kalıp)',kat:'Temizlik',birim:'Adet',alis:8,satis:14,stok:25,minStok:8,kdv:18,not:''},
+  ];
+  demoUrunler.forEach(u => { u.createdAt = now(); });
+  W(K.URUNLER, [...us, ...demoUrunler]);
+
+  // Demo kişiler
+  const kisiler = gKisi();
+  const demoKisiler = [
+    {id:uid(),ad:'Mehmet YILMAZ',rutbe:'Uzm.J.VII.Kad.Çvş.',tel:'',limit:200,createdAt:now()},
+    {id:uid(),ad:'Ali KAYA',rutbe:'J.Er',tel:'',limit:100,createdAt:now()},
+    {id:uid(),ad:'Hasan DEMİR',rutbe:'J.Çvş.',tel:'',limit:150,createdAt:now()},
+  ];
+  W(K.KISILER, [...kisiler, ...demoKisiler]);
+
+  // Demo alış
+  const allUs = gU();
+  const als = gAl();
+  als.push({
+    id:uid(),tarih:today(),tedarikci:'Kocabaş Market',fatura:'F2024-001',
+    kalemler:allUs.slice(0,3).map(u=>({urunId:u.id,urunAd:u.ad,miktar:50,fiyat:u.alis,toplam:50*u.alis})),
+    toplam:allUs.slice(0,3).reduce((s,u)=>s+50*u.alis,0),createdAt:now()
+  });
+  W(K.ALISLAR, als);
+
+  toast('✅ Demo verisi yüklendi!', 'success');
+  setTimeout(() => { switchTab('dashboard', document.querySelector('[data-tab=dashboard]')); }, 500);
+}
+
+// ════════════════════════════════════════════════════════════
+// DEPO TAKİBİ
+// ════════════════════════════════════════════════════════════
+function renderDepoTakibi() {
+  const us = gU();
+  const satislar = gSat().filter(s => !s.iptal);
+  const katFiltre = document.getElementById('dt-kat-filtre').value;
+  const durumFiltre = document.getElementById('dt-durum-filtre').value;
+
+  // Filtrele
+  let filtreli = us;
+  if (katFiltre) filtreli = filtreli.filter(u => u.kat === katFiltre);
+  if (durumFiltre === 'kritik') filtreli = filtreli.filter(u => u.stok <= u.minStok && u.stok > 0);
+  else if (durumFiltre === 'bitti') filtreli = filtreli.filter(u => u.stok <= 0);
+  else if (durumFiltre === 'normal') filtreli = filtreli.filter(u => u.stok > u.minStok);
+
+  // ── KPI Özet ──
+  const toplamUrun = us.length;
+  const toplamStokAdet = us.reduce((s, u) => s + (u.stok || 0), 0);
+  const kritikAdet = us.filter(u => u.stok <= u.minStok && u.stok > 0).length;
+  const bitenAdet = us.filter(u => u.stok <= 0).length;
+  const stokDeger = us.reduce((s, u) => s + (u.alis || 0) * (u.stok || 0), 0);
+
+  document.getElementById('dt-kpis').innerHTML = `
+    <div class="kpi kpi-blue"><div class="kpi-icon">📦</div><div class="kpi-val">${toplamUrun}</div><div class="kpi-lbl">Toplam Ürün</div></div>
+    <div class="kpi kpi-green"><div class="kpi-icon">📊</div><div class="kpi-val">${toplamStokAdet}</div><div class="kpi-lbl">Toplam Stok (Adet)</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-icon">⚠️</div><div class="kpi-val">${kritikAdet}</div><div class="kpi-lbl">Kritik Stok</div></div>
+    <div class="kpi kpi-red"><div class="kpi-icon">🚫</div><div class="kpi-val">${bitenAdet}</div><div class="kpi-lbl">Stok Biten</div></div>
+    <div class="kpi kpi-purple"><div class="kpi-icon">💰</div><div class="kpi-val">₺${fmt2(stokDeger)}</div><div class="kpi-lbl">Stok Değeri (Alış)</div></div>
+  `;
+
+  // ── KALAN ÜRÜNLER (Stok Durumu) ──
+  const stokBody = document.getElementById('dt-stok-tbody');
+  if (!filtreli.length) {
+    stokBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:30px;">Filtreye uygun ürün bulunamadı.</td></tr>';
+  } else {
+    stokBody.innerHTML = filtreli.map((u, i) => {
+      const durum = u.stok <= 0 ? 'badge-red' : u.stok <= u.minStok ? 'badge-amber' : 'badge-green';
+      const durumText = u.stok <= 0 ? 'Bitti' : u.stok <= u.minStok ? 'Kritik' : 'Normal';
+      const deger = (u.alis || 0) * (u.stok || 0);
+      return `<tr>
+        <td>${i + 1}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:11px;">${esc(u.barcode || '-')}</td>
+        <td><strong>${esc(u.ad)}</strong></td>
+        <td><span class="badge ${katBadge(u.kat)}">${esc(u.kat)}</span></td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;">₺${fmt2(u.alis)}</td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);">₺${fmt2(u.satis)}</td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;">${u.stok || 0}</td>
+        <td class="tc">${u.minStok || 0}</td>
+        <td class="tc"><span class="badge ${durum}">${durumText}</span></td>
+        <td class="tc" style="font-family:'JetBrains Mono',monospace;">₺${fmt2(deger)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Footer toplamları
+  const filtrelenmisStok = filtreli.reduce((s, u) => s + (u.stok || 0), 0);
+  const filtrelenmisDeger = filtreli.reduce((s, u) => s + (u.alis || 0) * (u.stok || 0), 0);
+  document.getElementById('dt-toplam-stok').textContent = filtrelenmisStok;
+  document.getElementById('dt-toplam-deger').textContent = `₺${fmt2(filtrelenmisDeger)}`;
+
+  // ── SATILAN ÜRÜNLER ──
+  const satisMap = {};
+  satislar.forEach(s => {
+    (s.kalemler || []).forEach(k => {
+      const ad = k.ad;
+      if (!satisMap[ad]) satisMap[ad] = { ad, qty: 0, ciro: 0, kar: 0, birimFiyat: k.birimFiyat || 0 };
+      satisMap[ad].qty += k.qty || 1;
+      satisMap[ad].ciro += k.toplam || 0;
+    });
+  });
+
+  // Kâr hesaplama için ürün alış fiyatlarını kullan
+  const satisArr = Object.values(satisMap).map(s => {
+    const u = us.find(x => x.ad === s.ad);
+    const alisFiyat = u ? (u.alis || 0) : 0;
+    const birimKar = s.birimFiyat - alisFiyat;
+    const toplamKar = birimKar * s.qty;
+    const karYuzde = alisFiyat > 0 ? (birimKar / alisFiyat * 100) : 0;
+    return {
+      ...s,
+      alisFiyat,
+      toplamKar: Math.max(0, toplamKar),
+      karYuzde,
+      kat: u ? u.kat : 'Diğer',
+    };
+  }).sort((a, b) => b.qty - a.qty);
+
+  const satisBody = document.getElementById('dt-satis-tbody');
+  if (!satisArr.length) {
+    satisBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:30px;">Henüz satış kaydı yok.</td></tr>';
+  } else {
+    satisBody.innerHTML = satisArr.map((s, i) => `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(s.ad)}</strong></td>
+      <td><span class="badge ${katBadge(s.kat)}">${esc(s.kat)}</span></td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;">₺${fmt2(s.birimFiyat)}</td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;">₺${fmt2(s.ciro)}</td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;color:var(--green);font-weight:700;">₺${fmt2(s.toplamKar)}</td>
+      <td class="tc"><span class="badge ${s.karYuzde > 30 ? 'badge-green' : 'badge-amber'}">%${fmt2(s.karYuzde)}</span></td>
+    </tr>`).join('');
+  }
+
+  // Footer toplamları — satış
+  const genelAdet = satisArr.reduce((s, x) => s + x.qty, 0);
+  const genelCiro = satisArr.reduce((s, x) => s + x.ciro, 0);
+  const genelKar = satisArr.reduce((s, x) => s + x.toplamKar, 0);
+  const genelKarYuzde = genelCiro > 0 ? (genelKar / genelCiro * 100) : 0;
+  document.getElementById('dt-satis-adet').textContent = genelAdet;
+  document.getElementById('dt-satis-ciro').textContent = `₺${fmt2(genelCiro)}`;
+  document.getElementById('dt-satis-kar').textContent = `₺${fmt2(genelKar)}`;
+  document.getElementById('dt-satis-kar-yuzde').textContent = `%${fmt2(genelKarYuzde)}`;
+}
+
+function printDepo(tip) {
+  const us = gU();
+  const satislar = gSat().filter(s => !s.iptal);
+  const w = window.open('', '_blank', 'width=900,height=700');
+  const katRgb = kat => ({'İçecek':'#00e5ff','Yiyecek':'#00ff41','Sigara & Tütün':'#ff0044','Temizlik':'#bf40ff','Kırtasiye':'#ffd700'})[kat]||'#ff1493';
+  const durumRgb = d => ({Normal:'#00ff41',Kritik:'#ffd700',Bitti:'#ff0044'})[d]||'#888';
+
+  let html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;font-size:12px;padding:20px;color:#222}
+    h2{font-size:18px;margin-bottom:6px}
+    h3{font-size:14px;margin:16px 0 8px;color:#444}
+    p{font-size:11px;color:#777;margin-bottom:12px}
+    table{border-collapse:collapse;width:100%;margin-bottom:20px}
+    th{background:#f0f4f8;border:1px solid #dde;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:#555}
+    td{border:1px solid #dde;padding:5px 8px;font-size:11px}
+    .tc{text-align:center}.tr{text-align:right}
+    .footer{margin-top:30px;padding-top:10px;border-top:2px solid #ddd;font-size:11px;color:#888;text-align:center}
+    .badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:#eee}
+    .badge-green{background:#d4edda;color:#155724}
+    .badge-red{background:#f8d7da;color:#721c24}
+    .badge-amber{background:#fff3cd;color:#856404}
+  </style>
+  <title>Depo Takibi - ${tip === 'stok' ? 'Stok Durumu' : 'Satılan Ürünler'}</title></head><body>`;
+
+  html += `<h2>🏪 ${gAyar().ad || 'KANTİN'}</h2>
+  <p>${gAyar().birim || ''} | ${new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'})}</p>`;
+
+  if (tip === 'stok') {
+    html += `<h3>📦 KALAN ÜRÜNLER — Stok Durumu</h3>
+    <table><thead><tr><th>#</th><th>Barkod</th><th>Ürün Adı</th><th>Kategori</th><th class="tc">Alış ₺</th><th class="tc">Satış ₺</th><th class="tc">Kalan Stok</th><th class="tc">Min Stok</th><th>Durum</th></tr></thead><tbody>`;
+    us.forEach((u, i) => {
+      const durum = u.stok <= 0 ? 'badge-red' : u.stok <= u.minStok ? 'badge-amber' : 'badge-green';
+      const durumText = u.stok <= 0 ? 'Bitti' : u.stok <= u.minStok ? 'Kritik' : 'Normal';
+      html += `<tr><td>${i+1}</td><td>${esc(u.barcode||'-')}</td><td><strong>${esc(u.ad)}</strong></td><td><span style="color:${katRgb(u.kat)};font-weight:700;">${esc(u.kat)}</span></td><td class="tc">₺${fmt2(u.alis)}</td><td class="tc">₺${fmt2(u.satis)}</td><td class="tc">${u.stok||0}</td><td class="tc">${u.minStok||0}</td><td class="tc"><span style="color:${durumRgb(durumText)};font-weight:700;">${durumText}</span></td></tr>`;
+    });
+    const toplamStok = us.reduce((s,u) => s + (u.stok||0), 0);
+    const toplamDeger = us.reduce((s,u) => s + (u.alis||0)*(u.stok||0), 0);
+    html += `</tbody></table>
+    <p><strong>Toplam Stok Adet:</strong> ${toplamStok} | <strong>Stok Değeri:</strong> ₺${fmt2(toplamDeger)}</p>`;
+  } else {
+    const satisMap = {};
+    satislar.forEach(s => (s.kalemler||[]).forEach(k => {
+      const ad = k.ad;
+      if (!satisMap[ad]) satisMap[ad] = { ad, qty:0, ciro:0, birimFiyat:k.birimFiyat||0 };
+      satisMap[ad].qty += k.qty||1;
+      satisMap[ad].ciro += k.toplam||0;
+    }));
+    const satisArr = Object.values(satisMap).map(s => {
+      const u = us.find(x => x.ad === s.ad);
+      const alisFiyat = u ? (u.alis||0) : 0;
+      const birimKar = s.birimFiyat - alisFiyat;
+      return { ...s, alisFiyat, toplamKar: Math.max(0, birimKar * s.qty), kat: u?u.kat:'Diğer' };
+    }).sort((a,b) => b.qty - a.qty);
+
+    html += `<h3>📈 SATILAN ÜRÜNLER</h3>
+    <table><thead><tr><th>#</th><th>Ürün Adı</th><th>Kategori</th><th class="tc">Satış Adet</th><th class="tc">Ciro ₺</th><th class="tc">Kâr ₺</th></tr></thead><tbody>`;
+    satisArr.forEach((s,i) => {
+      html += `<tr><td>${i+1}</td><td><strong>${esc(s.ad)}</strong></td><td><span style="color:${katRgb(s.kat)};font-weight:700;">${esc(s.kat)}</span></td><td class="tc">${s.qty}</td><td class="tc">₺${fmt2(s.ciro)}</td><td class="tc">₺${fmt2(s.toplamKar)}</td></tr>`;
+    });
+    const genelAdet = satisArr.reduce((s,x) => s + x.qty, 0);
+    const genelCiro = satisArr.reduce((s,x) => s + x.ciro, 0);
+    const genelKar = satisArr.reduce((s,x) => s + x.toplamKar, 0);
+    html += `</tbody></table>
+    <p><strong>Toplam Satılan:</strong> ${genelAdet} adet | <strong>Toplam Ciro:</strong> ₺${fmt2(genelCiro)} | <strong>Toplam Kâr:</strong> ₺${fmt2(genelKar)}</p>`;
+  }
+
+  html += `<div class="footer">Belge Otomatik Oluşturulmuştur — KANTİN YÖNETİM SİSTEMİ v1</div></body></html>`;
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 300);
+}
+
+// ════════════════════════════════════════════════════════════
+// REFRESH TOPBAR
+// ════════════════════════════════════════════════════════════
+function refreshTopBar() {
+  const a = gAyar();
+  const t = today();
+  const gunCiro = gSat().filter(s=>!s.iptal&&s.tarih.slice(0,10)===t).reduce((s,x)=>s+x.toplam,0);
+  document.getElementById('tb-gun-ciro').textContent = `📊 Günlük: ₺${fmt2(gunCiro)}`;
+  const kritik = gU().filter(u => u.stok <= u.minStok).length;
+  const sb = document.getElementById('tb-stok-badge');
+  if (kritik > 0) {
+    sb.className = 'tb-badge warn';
+    sb.textContent = `⚠️ ${kritik} Kritik Stok`;
+  } else {
+    sb.className = 'tb-badge ok';
+    sb.textContent = '✅ Stok Normal';
+  }
+  const now3 = new Date();
+  document.getElementById('tb-tarih').textContent = now3.toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric',weekday:'short'});
+  updateVeresiyeBadge();
+}
+
+// ════════════════════════════════════════════════════════════
+// AI ÜRÜN ARAMA SİSTEMİ
+// ════════════════════════════════════════════════════════════
+let _aiResults = [];   // AI'dan gelen tüm ürünler
+let _aiSelected = new Set(); // seçili indexler
+let _aiStep = 1;
+
+function openAIUrunModal() {
+  _aiResults = [];
+  _aiSelected = new Set();
+  _aiStep = 1;
+  document.getElementById('ai-search-input').value = '';
+  document.getElementById('ai-results-container').innerHTML = '<div class="ai-status">🔍 Bir kategori seçin veya ürün arayın</div>';
+  aiSetStep(1);
+  openModal('modal-ai-urun');
+  setTimeout(() => document.getElementById('ai-search-input').focus(), 150);
+}
+
+function aiSetStep(n) {
+  _aiStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById(`ai-step-${i}`).classList.toggle('active', i === n);
+    const dot = document.getElementById(`sdot-${i}`);
+    dot.classList.toggle('active', i === n);
+    dot.classList.toggle('done', i < n);
+  });
+  document.getElementById('ai-btn-back').style.display = n > 1 ? 'inline-flex' : 'none';
+  document.getElementById('ai-btn-ekle').style.display = n === 3 ? 'inline-flex' : 'none';
+}
+
+function aiBack() {
+  if (_aiStep === 2) aiSetStep(1);
+  else if (_aiStep === 3) { aiSetStep(2); aiRenderEditList(); }
+}
+
+async function aiSearch() {
+  const q = document.getElementById('ai-search-input').value.trim();
+  if (!q) { toast('❌ Arama terimi girin!', 'error'); return; }
+  await aiSearchPreset(q);
+}
+
+async function aiSearchRandom() {
+  const presets = [
+    'Türk kantininde satılan tipik içecekler: çay, kahve, su, kola, ayran',
+    'Ofis kantini atıştırmalıkları: bisküvi, çikolata, cips, gofret, kuruyemiş',
+    'Askeri kantin temel gıda ürünleri: şeker, çay, makarna, konserve, ekmek',
+    'Temizlik ve kişisel bakım ürünleri: sabun, şampuan, diş macunu, tıraş malzemeleri',
+    'Kırtasiye malzemeleri: kalem, defter, dosya, zımba, yapıştırıcı',
+  ];
+  await aiSearchPreset(presets[Math.floor(Math.random() * presets.length)]);
+}
+
+async function aiSearchPreset(query) {
+  document.getElementById('ai-search-input').value = query;
+  const container = document.getElementById('ai-results-container');
+  container.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div><div style="font-size:12px;color:var(--text3);">AI ürünleri hazırlıyor…</div></div>`;
+
+  const prompt = `Sen bir Türk marketi/kantini ürün veritabanısın. Kullanıcı şunu arıyor: "${query}"
+
+Bu aramayla ilgili 10-16 adet GERÇEK MARKA ve ÜRÜN adı kullanarak liste oluştur. Türkiye'de satılan gerçek ürün isimlerini, ambalaj boyutlarını ve marka adlarını kullan (Ülker, Eti, Pınar, Sek, Nescafe, Coca-Cola, Pepsi, Lay's, Marlboro, Colgate, Ariel vb.)
+
+ÜRÜN ADI KURALI: Mutlaka gerçek marka + ürün adı + gramaj/ml yaz. Örnek:
+- "Çay" değil → "Çaykur Rize Turist Çay 1000g"
+- "Kola" değil → "Coca-Cola 330ml Kutu"
+- "Bisküvi" değil → "Ülker Dido Sütlü Bisküvi 35g"
+- "Sigara" değil → "Marlboro Red 20'li Paket"
+
+KATEGORİ KURALLARI:
+- Çay, kahve, su, kola, ayran, meyve suyu → "İçecek"
+- Simit, poğaça, sandviç, bisküvi, çikolata, cips, gofret, konserve → "Yiyecek"
+- Sigara, tütün → "Sigara & Tütün"
+- Sabun, şampuan, deterjan, temizlik → "Temizlik"
+- Kalem, defter, dosya, zımba, pil → "Kırtasiye"
+- Diğer her şey → "Diğer"
+
+KDV KURALLARI:
+- Temel gıda (ekmek, süt, sebze, meyve): %1
+- İşlenmiş gıda, içecek, bisküvi, çikolata: %8
+- Sigara, kişisel bakım, temizlik, kırtasiye: %18
+- Elektronik: %20
+
+FİYAT KURALI: Türkiye 2024 gerçekçi piyasa fiyatları. Alış fiyatı satıştan düşük olsun.
+
+SADECE JSON dizisi döndür, başka hiçbir şey yazma:
+[
+  {
+    "ad": "Çaykur Rize Turist Çay 1000g",
+    "kat": "İçecek",
+    "birim": "Paket",
+    "alis": 180.00,
+    "satis": 220.00,
+    "kdv": 8,
+    "minStok": 10,
+    "icon": "☕",
+    "aciklama": "500g siyah çay"
+  }
+]`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API hatası: ${resp.status}`);
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '';
+
+    // JSON parse
+    let parsed;
+    try {
+      const match = raw.match(/\[[\s\S]*\]/);
+      parsed = JSON.parse(match ? match[0] : raw);
+    } catch {
+      throw new Error('AI yanıtı JSON formatında değil');
+    }
+
+    if (!Array.isArray(parsed) || !parsed.length) throw new Error('Ürün listesi boş');
+
+    _aiResults = parsed.map((p, i) => ({ ...p, _idx: i }));
+    _aiSelected = new Set(_aiResults.map((_, i) => i)); // hepsini seçili başlat
+    aiRenderResults();
+
+  } catch (err) {
+    container.innerHTML = `<div class="ai-status" style="color:var(--red);">
+      ❌ ${err.message}<br><br>
+      <small style="color:var(--text3);">İnternet bağlantınızı kontrol edin veya tekrar deneyin.</small>
+    </div>`;
+    toast('❌ AI bağlantı hatası: ' + err.message, 'error');
+  }
+}
+
+function aiRenderResults() {
+  const container = document.getElementById('ai-results-container');
+  if (!_aiResults.length) {
+    container.innerHTML = '<div class="ai-status">Sonuç bulunamadı.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:11px;font-weight:700;color:var(--text3);">${_aiResults.length} ürün bulundu</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-xs" onclick="aiToggleAll(true)">✅ Tümünü Seç</button>
+        <button class="btn btn-ghost btn-xs" onclick="aiToggleAll(false)">☐ Seçimi Kaldır</button>
+        <button class="btn btn-primary btn-sm" onclick="aiGoStep2()">Seçilenleri Düzenle →</button>
+      </div>
+    </div>
+    <div class="ai-result-grid" id="ai-grid">
+      ${_aiResults.map((p, i) => aiProductCardHTML(p, i)).join('')}
+    </div>
+  `;
+}
+
+function aiProductCardHTML(p, i) {
+  const sel = _aiSelected.has(i);
+  const marj = p.alis > 0 ? ((p.satis - p.alis) / p.alis * 100).toFixed(0) : 0;
+  return `<div class="ai-product-card ${sel ? 'selected' : ''}" id="aicard-${i}" onclick="aiToggleCard(${i})">
+    <div class="apc-check">${sel ? '✓' : ''}</div>
+    <div class="apc-icon">${p.icon || '📦'}</div>
+    <div class="apc-name">${esc(p.ad)}</div>
+    <div class="apc-kat">${esc(p.kat)} · ${esc(p.birim||'Adet')}</div>
+    <div class="apc-prices">
+      <span class="apc-alis">A: ₺${(p.alis||0).toFixed(2)}</span>
+      <span class="apc-satis">S: ₺${(p.satis||0).toFixed(2)}</span>
+    </div>
+    <div class="apc-kdv">KDV %${p.kdv} · Kâr %${marj} · Min.stok: ${p.minStok||5}</div>
+  </div>`;
+}
+
+function aiToggleCard(i) {
+  if (_aiSelected.has(i)) _aiSelected.delete(i);
+  else _aiSelected.add(i);
+  const card = document.getElementById(`aicard-${i}`);
+  if (card) {
+    card.classList.toggle('selected', _aiSelected.has(i));
+    card.querySelector('.apc-check').textContent = _aiSelected.has(i) ? '✓' : '';
+  }
+}
+
+function aiToggleAll(val) {
+  if (val) _aiResults.forEach((_, i) => _aiSelected.add(i));
+  else _aiSelected.clear();
+  _aiResults.forEach((_, i) => {
+    const card = document.getElementById(`aicard-${i}`);
+    if (card) {
+      card.classList.toggle('selected', val);
+      card.querySelector('.apc-check').textContent = val ? '✓' : '';
+    }
+  });
+}
+
+function aiGoStep2() {
+  if (_aiSelected.size === 0) { toast('⚠️ En az bir ürün seçin!', 'warn'); return; }
+  aiRenderEditList();
+  aiSetStep(2);
+}
+
+function aiRenderEditList() {
+  const sel = _aiResults.filter((_, i) => _aiSelected.has(i));
+  document.getElementById('ai-sel-count').textContent = `${sel.length} ürün seçildi`;
+  const el = document.getElementById('ai-edit-list');
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:6px;padding:6px 8px;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;">
+      <span>Ürün Adı</span><span>Kategori</span><span>Alış ₺</span><span>Satış ₺</span><span>KDV %</span><span>Başl. Stok</span>
+    </div>
+    ${sel.map((p, si) => {
+      const origIdx = _aiResults.indexOf(p);
+      return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:6px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:5px;align-items:center;">
+        <input type="text" value="${esc(p.ad)}" id="aie-ad-${origIdx}" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 8px;font-size:12px;font-weight:600;outline:none;width:100%;">
+        <select id="aie-kat-${origIdx}" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 4px;font-size:11px;outline:none;width:100%;color:#f0f4ff;">
+          ${['İçecek','Yiyecek','Sigara & Tütün','Temizlik','Kırtasiye','Diğer'].map(k => {
+            const rc = {'İçecek':'#00e5ff','Yiyecek':'#00ff41','Sigara & Tütün':'#ff0044','Temizlik':'#bf40ff','Kırtasiye':'#ffd700','Diğer':'#ff1493'}[k];
+            return `<option ${p.kat===k?'selected':''} style="color:${rc};">${k}</option>`;
+          }).join('')}
+        </select>
+        <input type="number" value="${p.alis}" id="aie-alis-${origIdx}" step="0.5" min="0" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 6px;font-size:12px;outline:none;width:100%;font-family:'JetBrains Mono',monospace;">
+        <input type="number" value="${p.satis}" id="aie-satis-${origIdx}" step="0.5" min="0" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 6px;font-size:12px;font-weight:700;outline:none;width:100%;font-family:'JetBrains Mono',monospace;">
+        <select id="aie-kdv-${origIdx}" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 4px;font-size:11px;outline:none;width:100%;color:#f0f4ff;">
+          ${[0,1,8,18,20].map(k => `<option value="${k}" ${p.kdv===k?'selected':''}>${k}%</option>`).join('')}
+        </select>
+        <input type="number" value="${p.minStok||5}" id="aie-stok-${origIdx}" min="0" style="background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 6px;font-size:12px;outline:none;width:100%;font-family:'JetBrains Mono',monospace;">
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function aiSelectAll() { aiToggleAll(true); aiRenderEditList(); }
+function aiDeselectAll() { aiToggleAll(false); aiRenderEditList(); }
+
+function aiGoStep3() {
+  const sel = _aiResults.filter((_, i) => _aiSelected.has(i));
+  if (!sel.length) { toast('⚠️ En az bir ürün seçin!', 'warn'); return; }
+
+  // Düzenlenmiş değerleri oku
+  const edited = sel.map((p) => {
+    const origIdx = _aiResults.indexOf(p);
+    return {
+      ...p,
+      ad: document.getElementById(`aie-ad-${origIdx}`)?.value || p.ad,
+      kat: document.getElementById(`aie-kat-${origIdx}`)?.value || p.kat,
+      alis: parseFloat(document.getElementById(`aie-alis-${origIdx}`)?.value) || p.alis,
+      satis: parseFloat(document.getElementById(`aie-satis-${origIdx}`)?.value) || p.satis,
+      kdv: parseInt(document.getElementById(`aie-kdv-${origIdx}`)?.value) || p.kdv,
+      startStok: parseInt(document.getElementById(`aie-stok-${origIdx}`)?.value) || 0,
+    };
+  });
+  _aiFinalList = edited;
+
+  // Mevcut ürünlerle çakışma kontrolü
+  const mevcut = gU().map(u => u.ad.toLowerCase());
+  const cakisan = edited.filter(p => mevcut.includes(p.ad.toLowerCase()));
+
+  document.getElementById('ai-step3-info').innerHTML = `
+    ✅ <strong>${edited.length} ürün</strong> sisteme eklenmeye hazır.
+    ${cakisan.length ? `<br>⚠️ <strong>${cakisan.length} ürün</strong> zaten mevcut (${cakisan.map(p=>p.ad).join(', ')}) — yine de eklenecek, çift kayıt oluşabilir.` : ''}
+  `;
+
+  document.getElementById('ai-confirm-tbody').innerHTML = edited.map(p => `
+    <tr>
+      <td><strong>${p.icon||'📦'} ${esc(p.ad)}</strong>${p.aciklama?`<br><small style="color:var(--text3)">${esc(p.aciklama)}</small>`:''}</td>
+      <td><span class="badge ${katBadge(p.kat)}">${esc(p.kat)}</span></td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;">₺${p.alis.toFixed(2)}</td>
+      <td class="tc" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);">₺${p.satis.toFixed(2)}</td>
+      <td class="tc"><span class="badge badge-gray">%${p.kdv}</span></td>
+      <td class="tc">${p.startStok}</td>
+    </tr>
+  `).join('');
+
+  aiSetStep(3);
+}
+
+let _aiFinalList = [];
+
+function aiEkleAll() {
+  if (!_aiFinalList.length) return;
+  const us = gU();
+  const sh = gSH();
+  let eklenen = 0;
+
+  _aiFinalList.forEach(p => {
+    const newId = uid();
+    const yeniUrun = {
+      id: newId,
+      barcode: uid().toUpperCase().slice(0,8),
+      ad: p.ad,
+      kat: p.kat,
+      birim: p.birim || 'Adet',
+      alis: p.alis,
+      satis: p.satis,
+      stok: p.startStok || 0,
+      minStok: p.minStok || 5,
+      kdv: p.kdv,
+      not: p.aciklama || '',
+      createdAt: now(),
+    };
+    us.push(yeniUrun);
+
+    // Başlangıç stok hareketi
+    if (p.startStok > 0) {
+      sh.push({ id: uid(), tarih: now(), urunId: newId, urunAd: p.ad, tip: 'ALIS', giris: p.startStok, cikis: 0, sonStok: p.startStok, aciklama: 'AI ile toplu ekleme - açılış stoğu' });
+    }
+    eklenen++;
+  });
+
+  W(K.URUNLER, us);
+  W(K.STOK_HAR, sh);
+  closeModal('modal-ai-urun');
+  renderUrunler();
+  refreshTopBar();
+  toast(`✅ ${eklenen} ürün başarıyla sisteme eklendi!`, 'success');
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const t = today();
+  const ay = t.slice(0,8) + '01';
+  document.getElementById('satis-bas-tarih').value = ay;
+  document.getElementById('satis-bit-tarih').value = t;
+  refreshTopBar();
+  renderDashboard();
+  setInterval(refreshTopBar, 60000);
+});
+</script>
+</body>
+</html>

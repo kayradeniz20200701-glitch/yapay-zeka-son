@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩸 Kan Şekeri Takip Sistemi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+            --bg: #f0f4ff;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(37,99,235,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .header-btn:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: var(--card);
+            border-bottom: 2px solid var(--border);
+            padding: 0 20px;
+            overflow-x: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .nav-tab {
+            padding: 14px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: var(--primary);
+            background: rgba(37,99,235,0.05);
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(37,99,235,0.05);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 6px 0;
+        }
+
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Form Styles */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37,99,235,0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #15803d);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #b91c1c);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f8fafc;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            font-weight: 700;
+        }
+
+        td {
+            font-size: 0.9rem;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .badge-normal {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-low {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin: 16px 0;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+        }
+
+        /* Tips */
+        .tip-card {
+            background: linear-gradient(135deg, #f0f9ff, #eff6ff);
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .tip-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .tip-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .tip-text {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 4px;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 16px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+        }
+
+        .timeline-date {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        /* Settings */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-label {
+            font-weight: 600;
+        }
+
+        .setting-desc {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .toggle {
+            width: 50px;
+            height: 28px;
+            background: #cbd5e1;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--success);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle.active::after {
+            left: 25px;
+        }
+
+        /* Pulse Animation for Alerts */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.1rem; }
+            .main-content { padding: 12px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-container { height: 250px; }
+            .nav-tab { padding: 12px 16px; font-size: 0.85rem; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-actions { display: none; }
+        }
+
+        /* Print */
+        @media print {
+            .header, .nav-tabs, .btn, .form-grid { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .glucometer-display {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .glucometer-value {
+            font-size: 4rem;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .glucometer-unit {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .glucometer-status {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .quick-add {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .quick-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(37,99,235,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>🩸 Kan Şekeri Takip Sistemi</h1>
+    <div class="header-actions">
+        <button class="header-btn" onclick="exportData()">📊 Dışa Aktar</button>
+        <button class="header-btn" onclick="document.getElementById('importFile').click()">📥 İçe Aktar</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+        <button class="header-btn" onclick="printReport()">🖨️ Yazdır</button>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('entry')">✏️ Veri Girişi</button>
+    <button class="nav-tab" onclick="switchTab('history')">📋 Geçmiş</button>
+    <button class="nav-tab" onclick="switchTab('weekly')">📅 Haftalık</button>
+    <button class="nav-tab" onclick="switchTab('monthly')">🗓️ Aylık</button>
+    <button class="nav-tab" onclick="switchTab('alerts')">⚠️ Uyarılar</button>
+    <button class="nav-tab" onclick="switchTab('tips')">💡 Öneriler</button>
+    <button class="nav-tab" onclick="switchTab('settings')">⚙️ Ayarlar</button>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab-content active">
+        <!-- Alert Banner -->
+        <div id="alertBanner"></div>
+
+        <!-- Glucometer Display -->
+        <div class="glucometer-display">
+            <div class="glucometer-unit">Son Ölçüm</div>
+            <div class="glucometer-value" id="lastValue">--</div>
+            <div class="glucometer-unit">mg/dL</div>
+            <div class="glucometer-status" id="lastStatus">Henüz ölçüm yok</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card success">
+                <div class="stat-label">Ortalama</div>
+                <div class="stat-value" id="statAvg">--</div>
+                <div class="stat-sub">mg/dL</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">En Düşük</div>
+                <div class="stat-value" id="statMin">--</div>
+                <div class="stat-sub">mg/dL</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-label">En Yüksek</div>
+                <div class="stat-value" id="statMax">--</div>
+                <div class="stat-sub">mg/dL</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-label">Toplam Ölçüm</div>
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-sub">kayıt</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-label">Hedef İçinde</div>
+                <div class="stat-value" id="statInRange">--%</div>
+                <div class="stat-sub">oran</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Son 7 Gün Ort.</div>
+                <div class="stat-value" id="stat7day">--</div>
+                <div class="stat-sub">mg/dL</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-title">📈 Son 30 Gün Trend</div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">🍽️ Öğün Dağılımı</div>
+                <div class="chart-container">
+                    <canvas id="mealChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-title">📊 Haftalık Karşılaştırma</div>
+                <div class="chart-container">
+                    <canvas id="weeklyBarChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">🎯 Dağılım (Histogram)</div>
+                <div class="chart-container">
+                    <canvas id="histogramChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENTRY TAB -->
+    <div id="tab-entry" class="tab-content">
+        <div class="card">
+            <div class="card-title">✏️ Yeni Ölçüm Kaydet</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>🩸 Kan Şekeri (mg/dL)</label>
+                    <input type="number" id="glucoseValue" placeholder="Örn: 120" min="20" max="600">
+                </div>
+                <div class="form-group">
+                    <label>📅 Tarih</label>
+                    <input type="date" id="entryDate">
+                </div>
+                <div class="form-group">
+                    <label>⏰ Saat</label>
+                    <input type="time" id="entryTime">
+                </div>
+                <div class="form-group">
+                    <label>🍽️ Öğün</label>
+                    <select id="mealType">
+                        <option value="Acil">🌅 Açlık (Sabah)</option>
+                        <option value="Kahvaltı Öncesi">Kahvaltı Öncesi</option>
+                        <option value="Kahvaltı Sonrası">Kahvaltı Sonrası (2 saat)</option>
+                        <option value="Öğle Öncesi">Öğle Öncesi</option>
+                        <option value="Öğle Sonrası">Öğle Sonrası (2 saat)</option>
+                        <option value="Akşam Öncesi">Akşam Öncesi</option>
+                        <option value="Akşam Sonrası">Akşam Sonrası (2 saat)</option>
+                        <option value="Gece">🌙 Gece / Yatmadan Önce</option>
+                        <option value="Rastgele">🔀 Rastgele</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>💉 İlaç Durumu</label>
+                    <select id="medication">
+                        <option value="Yok">İlaç Alınmadı</option>
+                        <option value="İnsülin">💉 İnsülin</option>
+                        <option value="Metformin">💊 Metformin</option>
+                        <option value="Diğer">📦 Diğer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🏃 Egzersiz</label>
+                    <select id="exercise">
+                        <option value="Yok">Yok</option>
+                        <option value="Hafif">🚶 Hafif Yürüyüş</option>
+                        <option value="Orta">🏃 Orta Tempo</option>
+                        <option value="Ağır">🏋️ Ağır Egzersiz</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+                <label>📝 Not</label>
+                <textarea id="entryNote" rows="2" placeholder="Ek notlar... (Örn: Stresli gün, hastalık vb.)"></textarea>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="addEntry()">💾 Kaydet</button>
+                <button class="btn btn-outline" onclick="clearForm()">🗑️ Temizle</button>
+            </div>
+
+            <!-- Quick Add -->
+            <div style="margin-top: 24px;">
+                <div class="card-title">⚡ Hızlı Ekleme</div>
+                <div class="quick-add">
+                    <button class="quick-btn" onclick="quickAdd(70)">70 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(90)">90 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(110)">110 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(130)">130 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(160)">160 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(200)">200 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(250)">250 mg/dL</button>
+                    <button class="quick-btn" onclick="quickAdd(300)">300 mg/dL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Entries -->
+        <div class="card">
+            <div class="card-title">🕐 Son Eklenenler</div>
+            <div id="recentEntries"></div>
+        </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="tab-history" class="tab-content">
+        <div class="card">
+            <div class="card-title">📋 Tüm Ölçüm Geçmişi</div>
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="date" id="filterStart" style="padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;">
+                <span style="align-self: center;">-</span>
+                <input type="date" id="filterEnd" style="padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;">
+                <select id="filterMeal" style="padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;">
+                    <option value="">Tüm Öğünler</option>
+                    <option value="Acil">Açlık</option>
+                    <option value="Kahvaltı Öncesi">Kahvaltı Öncesi</option>
+                    <option value="Kahvaltı Sonrası">Kahvaltı Sonrası</option>
+                    <option value="Öğle Öncesi">Öğle Öncesi</option>
+                    <option value="Öğle Sonrası">Öğle Sonrası</option>
+                    <option value="Akşam Öncesi">Akşam Öncesi</option>
+                    <option value="Akşam Sonrası">Akşam Sonrası</option>
+                    <option value="Gece">Gece</option>
+                </select>
+                <button class="btn btn-primary" onclick="filterHistory()">🔍 Filtrele</button>
+                <button class="btn btn-outline" onclick="clearFilter()">✖ Temizle</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>Şeker (mg/dL)</th>
+                            <th>Öğün</th>
+                            <th>İlaç</th>
+                            <th>Egzersiz</th>
+                            <th>Durum</th>
+                            <th>Not</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable"></tbody>
+                </table>
+            </div>
+            <div id="historyEmpty" class="empty-state" style="display:none;">
+                <div class="icon">📋</div>
+                <h3>Henüz kayıt yok</h3>
+                <p>Veri girişi sekmesinden ölçüm ekleyebilirsiniz.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEEKLY TAB -->
+    <div id="tab-weekly" class="tab-content">
+        <div class="card">
+            <div class="card-title">📅 Haftalık Analiz</div>
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <button class="btn btn-outline" onclick="changeWeek(-1)">◀ Önceki Hafta</button>
+                <span id="weekRange" style="align-self: center; font-weight: 600;"></span>
+                <button class="btn btn-outline" onclick="changeWeek(1)">Sonraki Hafta ▶</button>
+            </div>
+            <div class="stats-grid" id="weeklyStats"></div>
+            <div class="chart-container">
+                <canvas id="weeklyLineChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📊 Haftalık Öğün Bazlı Ortalamalar</div>
+            <div class="chart-container">
+                <canvas id="weeklyMealChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- MONTHLY TAB -->
+    <div id="tab-monthly" class="tab-content">
+        <div class="card">
+            <div class="card-title">🗓️ Aylık Analiz</div>
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <button class="btn btn-outline" onclick="changeMonth(-1)">◀ Önceki Ay</button>
+                <span id="monthRange" style="align-self: center; font-weight: 600;"></span>
+                <button class="btn btn-outline" onclick="changeMonth(1)">Sonraki Ay ▶</button>
+            </div>
+            <div class="stats-grid" id="monthlyStats"></div>
+            <div class="chart-container">
+                <canvas id="monthlyLineChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📈 Aylık Trend ve Hedef Çizgileri</div>
+            <div class="chart-container">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTS TAB -->
+    <div id="tab-alerts" class="tab-content">
+        <div id="alertsContainer"></div>
+
+        <div class="card">
+            <div class="card-title">📜 Uyarı Geçmişi</div>
+            <div id="alertHistory"></div>
+        </div>
+    </div>
+
+    <!-- TIPS TAB -->
+    <div id="tab-tips" class="tab-content">
+        <div class="card">
+            <div class="card-title">💡 Kan Şekeri Yönetimi Önerileri</div>
+            <div id="tipsContainer"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🏥 Ne Zaman Doktora Başvurmalı?</div>
+            <div id="doctorTips"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🌐 İnternet ile Neler Yapılabilir?</div>
+            <div id="internetTips"></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-content">
+        <div class="card">
+            <div class="card-title">⚙️ Kişisel Ayarlar</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>👤 Ad Soyad</label>
+                    <input type="text" id="patientName" placeholder="Adınız">
+                </div>
+                <div class="form-group">
+                    <label>🎂 Yaş</label>
+                    <input type="number" id="patientAge" placeholder="Yaşınız">
+                </div>
+                <div class="form-group">
+                    <label>🩺 Diyabet Tipi</label>
+                    <select id="diabetesType">
+                        <option value="Tip 1">Tip 1 Diyabet</option>
+                        <option value="Tip 2">Tip 2 Diyabet</option>
+                        <option value="Gestasyonel">Gestasyonel Diyabet</option>
+                        <option value="Pre-Diyabet">Pre-Diyabet</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🎯 Hedef Aralık (Düşük)</label>
+                    <input type="number" id="targetLow" value="70" placeholder="mg/dL">
+                </div>
+                <div class="form-group">
+                    <label>🎯 Hedef Aralık (Yüksek)</label>
+                    <input type="number" id="targetHigh" value="140" placeholder="mg/dL">
+                </div>
+                <div class="form-group">
+                    <label>⚠️ Uyarı Seviyesi (Düşük)</label>
+                    <input type="number" id="alertLow" value="60" placeholder="mg/dL">
+                </div>
+                <div class="form-group">
+                    <label>🚨 Kritik Seviye (Yüksek)</label>
+                    <input type="number" id="alertHigh" value="200" placeholder="mg/dL">
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Ayarları Kaydet</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔔 Bildirim Ayarları</div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Yüksek Şeker Uyarısı</div>
+                    <div class="setting-desc">Kan şekeri hedefin üzerindeyse uyar</div>
+                </div>
+                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Düşük Şeker Uyarısı</div>
+                    <div class="setting-desc">Kan şekeri hedefin altındaysa uyar</div>
+                </div>
+                <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Ölçüm Hatırlatıcısı</div>
+                    <div class="setting-desc">Düzenli ölçüm yapmayı hatırlat</div>
+                </div>
+                <div class="toggle" onclick="this.classList.toggle('active')"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🗃️ Veri Yönetimi</div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="exportData()">📊 JSON Dışa Aktar</button>
+                <button class="btn btn-outline" onclick="document.getElementById('importFile2').click()">📥 JSON İçe Aktar</button>
+                <input type="file" id="importFile2" style="display:none" accept=".json" onchange="importData(event)">
+                <button class="btn btn-outline" onclick="exportCSV()">📄 CSV Dışa Aktar</button>
+                <button class="btn btn-danger" onclick="clearAllData()">🗑️ Tüm Verileri Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal-overlay" id="alertModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">⚠️ Uyarı</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    // ==================== DATA MANAGEMENT ====================
+    let entries = JSON.parse(localStorage.getItem('glucose_entries') || '[]');
+    let settings = JSON.parse(localStorage.getItem('glucose_settings') || '{}');
+    let currentWeekOffset = 0;
+    let currentMonthOffset = 0;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        setDefaultDateTime();
+        loadSettings();
+        updateDashboard();
+        renderHistory();
+        renderWeekly();
+        renderMonthly();
+        renderAlerts();
+        renderTips();
+    });
+
+    function setDefaultDateTime() {
+        const now = new Date();
+        document.getElementById('entryDate').value = now.toISOString().split('T')[0];
+        document.getElementById('entryTime').value = now.toTimeString().slice(0, 5);
+    }
+
+    function saveData() {
+        localStorage.setItem('glucose_entries', JSON.stringify(entries));
+    }
+
+    function saveSettingsData() {
+        localStorage.setItem('glucose_settings', JSON.stringify(settings));
+    }
+
+    // ==================== ENTRY MANAGEMENT ====================
+    function addEntry() {
+        const value = parseFloat(document.getElementById('glucoseValue').value);
+        const date = document.getElementById('entryDate').value;
+        const time = document.getElementById('entryTime').value;
+        const meal = document.getElementById('mealType').value;
+        const medication = document.getElementById('medication').value;
+        const exercise = document.getElementById('exercise').value;
+        const note = document.getElementById('entryNote').value;
+
+        if (!value || value < 20 || value > 600) {
+            showModal('⚠️ Geçersiz Değer', 'Lütfen 20-600 mg/dL arasında geçerli bir kan şekeri değeri girin.');
+            return;
+        }
+
+        if (!date || !time) {
+            showModal('⚠️ Eksik Bilgi', 'Lütfen tarih ve saat bilgilerini girin.');
+            return;
+        }
+
+        const entry = {
+            id: Date.now(),
+            value: value,
+            date: date,
+            time: time,
+            meal: meal,
+            medication: medication,
+            exercise: exercise,
+            note: note,
+            timestamp: new Date(date + 'T' + time).getTime()
+        };
+
+        entries.push(entry);
+        entries.sort((a, b) => b.timestamp - a.timestamp);
+        saveData();
+
+        // Check alerts
+        checkAlerts(value);
+
+        // Reset form
+        document.getElementById('glucoseValue').value = '';
+        document.getElementById('entryNote').value = '';
+        setDefaultDateTime();
+
+        // Refresh all
+        updateDashboard();
+        renderHistory();
+        renderWeekly();
+        renderMonthly();
+        renderAlerts();
+        renderRecentEntries();
+
+        // Show success
+        const status = getStatus(value);
+        showModal('✅ Kayıt Eklendi', `
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 3rem;">${value} mg/dL</div>
+                <div style="font-size: 1.2rem; margin-top: 8px; color: ${status.color}; font-weight: 700;">
+                    ${status.label}
+                </div>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: #64748b;">
+                    ${date} ${time} | ${meal}
+                </div>
+            </div>
+        `);
+    }
+
+    function quickAdd(value) {
+        document.getElementById('glucoseValue').value = value;
+        document.getElementById('glucoseValue').focus();
+    }
+
+    function clearForm() {
+        document.getElementById('glucoseValue').value = '';
+        document.getElementById('entryNote').value = '';
+        setDefaultDateTime();
+    }
+
+    function deleteEntry(id) {
+        if (confirm('Bu kaydı silmek istediğinize emin misiniz?')) {
+            entries = entries.filter(e => e.id !== id);
+            saveData();
+            updateDashboard();
+            renderHistory();
+            renderWeekly();
+            renderMonthly();
+            renderAlerts();
+        }
+    }
+
+    // ==================== STATUS & CLASSIFICATION ====================
+    function getStatus(value) {
+        const targetLow = settings.targetLow || 70;
+        const targetHigh = settings.targetHigh || 140;
+        const alertLow = settings.alertLow || 60;
+        const alertHigh = settings.alertHigh || 200;
+
+        if (value <= alertLow) return { label: '🔴 Ciddi Düşük (Hipoglisemi)', color: '#dc2626', class: 'danger' };
+        if (value < targetLow) return { label: '🔵 Düşük', color: '#2563eb', class: 'low' };
+        if (value <= targetHigh) return { label: '🟢 Normal', color: '#16a34a', class: 'normal' };
+        if (value <= alertHigh) return { label: '🟡 Yüksek', color: '#f59e0b', class: 'warning' };
+        return { label: '🔴 Ciddi Yüksek (Hiperlisemi)', color: '#dc2626', class: 'danger' };
+    }
+
+    function getBadgeHTML(value) {
+        const status = getStatus(value);
+        const cls = status.class === 'low' ? 'badge-low' : status.class === 'normal' ? 'badge-normal' : status.class === 'warning' ? 'badge-warning' : 'badge-danger';
+        return `<span class="badge ${cls}">${status.label}</span>`;
+    }
+
+    // ==================== ALERTS ====================
+    function checkAlerts(value) {
+        const status = getStatus(value);
+        const alertLow = settings.alertLow || 60;
+        const alertHigh = settings.alertHigh || 200;
+
+        if (value <= alertLow) {
+            showModal('🚨 ACİL: Düşük Kan Şekeri!', `
+                <div class="alert-banner alert-danger">
+                    <span style="font-size: 2rem;">⚠️</span>
+                    <div>
+                        <strong>Hipoglisemi Tespit Edildi!</strong><br>
+                        Kan şekeriniz ${value} mg/dL - kritik düşük seviye.
+                    </div>
+                </div>
+                <h3 style="margin: 16px 0 8px;">🆕 Acil Yapılması Gerekenler:</h3>
+                <ol style="line-height: 2; padding-left: 20px;">
+                    <li><strong>15-15 Kuralı:</strong> 15 gram hızlı karbonhidrat alın (yarım bardak meyve suyu, 1 yemek kaşığı bal, 3-4 şeker)</li>
+                    <li><strong>15 dakika bekleyin</strong> ve tekrar ölçün</li>
+                    <li>Hâlâ düşükse tekrarlayın</li>
+                    <li>Normal seviyeye gelince küçük bir atıştırmalık yiyin</li>
+                    <li><strong>Bilinciniz bulanıksa hemen 112'yi arayın!</strong></li>
+                </ol>
+            `);
+        } else if (value > alertHigh) {
+            showModal('🚨 UYARI: Yüksek Kan Şekeri!', `
+                <div class="alert-banner alert-warning">
+                    <span style="font-size: 2rem;">⚠️</span>
+                    <div>
+                        <strong>Hiperlisemi Tespit Edildi!</strong><br>
+                        Kan şekeriniz ${value} mg/dL - kritik yüksek seviye.
+                    </div>
+                </div>
+                <h3 style="margin: 16px 0 8px;">📋 Yapılması Gerekenler:</h3>
+                <ol style="line-height: 2; padding-left: 20px;">
+                    <li><strong>Bol su için</strong> - şekerin atılmasına yardımcı olur</li>
+                    <li>Hafif tempolu <strong>yürüyüş yapın</strong> (30 dk)</li>
+                    <li>İlaçlarınızı kontrol edin</li>
+                    <li>2 saat sonra tekrar ölçün</li>
+                    <li><strong>300 mg/dL üzerindeyse ve keton varsa hemen doktora başvurun!</strong></li>
+                </ol>
+                <div class="alert-banner alert-danger" style="margin-top: 16px;">
+                    <span>🏥</span>
+                    <div><strong>Aşağıdaki belirtiler varsa ACİL servise başvurun:</strong><br>
+                    Bulanık görme, aşırı susama, sık idrara çıkma, mide bulantısı, nefeste meyve kokusu</div>
+                </div>
+            `);
+        }
+    }
+
+    function renderAlerts() {
+        const container = document.getElementById('alertsContainer');
+        const historyContainer = document.getElementById('alertHistory');
+        const alertLow = settings.alertLow || 60;
+        const alertHigh = settings.alertHigh || 200;
+        const targetLow = settings.targetLow || 70;
+        const targetHigh = settings.targetHigh || 140;
+
+        const recentEntries = entries.slice(0, 30);
+        const alerts = [];
+        const highEntries = entries.filter(e => e.value > alertHigh);
+        const lowEntries = entries.filter(e => e.value < alertLow);
+        const warningEntries = entries.filter(e => e.value > targetHigh && e.value <= alertHigh);
+        const lowWarningEntries = entries.filter(e => e.value < targetLow && e.value >= alertLow);
+
+        // Current status
+        if (entries.length > 0) {
+            const latest = entries[0];
+            const status = getStatus(latest.value);
+            if (status.class === 'danger' || status.class === 'warning') {
+                alerts.push({
+                    type: status.class === 'danger' ? 'danger' : 'warning',
+                    message: `Son ölçüm: ${latest.value} mg/dL - ${status.label}`,
+                    date: latest.date + ' ' + latest.time
+                });
+            }
+        }
+
+        // High readings alert
+        if (highEntries.length > 0) {
+            alerts.push({
+                type: 'danger',
+                message: `🔴 Son dönemde ${highEntries.length} kez kritik yüksek ölçüm tespit edildi (${alertHigh} mg/dL üzeri)`,
+                date: 'Sistem Uyarısı'
+            });
+        }
+
+        // Low readings alert
+        if (lowEntries.length > 0) {
+            alerts.push({
+                type: 'danger',
+                message: `🔵 Son dönemde ${lowEntries.length} kez kritik düşük ölçüm tespit edildi (${alertLow} mg/dL altı)`,
+                date: 'Sistem Uyarısı'
+            });
+        }
+
+        // Trend alert
+        if (entries.length >= 3) {
+            const last3 = entries.slice(0, 3).map(e => e.value);
+            const increasing = last3[0] > last3[1] && last3[1] > last3[2] && (last3[0] - last3[2]) > 40;
+            if (increasing) {
+                alerts.push({
+                    type: 'warning',
+                    message: '📈 Son 3 ölçümde sürekli artış trendi tespit edildi!',
+                    date: 'Sistem Uyarısı'
+                });
+            }
+        }
+
+        // No recent reading
+        if (entries.length > 0) {
+            const lastDate = new Date(entries[0].timestamp);
+            const now = new Date();
+            const hoursDiff = (now - lastDate) / (1000 * 60 * 60);
+            if (hoursDiff > 24) {
+                alerts.push({
+                    type: 'info',
+                    message: `⏰ Son ${Math.round(hoursDiff)} saattir ölçüm yapılmadı. Düzenli ölçüm yapmayı unutmayın!`,
+                    date: 'Hatırlatma'
+                });
+            }
+        }
+
+        // No entries
+        if (entries.length === 0) {
+            alerts.push({
+                type: 'info',
+                message: 'ℹ️ Henüz ölçüm kaydı yok. İlk ölçümünüzü ekleyin.',
+                date: 'Bilgi'
+            });
+        }
+
+        container.innerHTML = alerts.map(a => `
+            <div class="alert-banner alert-${a.type} ${a.type === 'danger' ? 'pulse' : ''}">
+                <span>${a.type === 'danger' ? '🚨' : a.type === 'warning' ? '⚠️' : a.type === 'info' ? 'ℹ️' : '✅'}</span>
+                <div>
+                    ${a.message}
+                    <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 2px;">${a.date}</div>
+                </div>
+            </div>
+        `).join('');
+
+        // Alert history
+        const allAlerts = entries.filter(e => e.value > alertHigh || e.value < alertLow).slice(0, 20);
+        if (allAlerts.length > 0) {
+            historyContainer.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Değer</th>
+                                <th>Durum</th>
+                                <th>Öğün</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allAlerts.map(e => `
+                                <tr>
+                                    <td>${e.date} ${e.time}</td>
+                                    <td><strong style="color: ${e.value > alertHigh ? '#dc2626' : '#2563eb'}">${e.value}</strong> mg/dL</td>
+                                    <td>${e.value > alertHigh ? '🔴 Yüksek' : '🔵 Düşük'}</td>
+                                    <td>${e.meal}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            historyContainer.innerHTML = '<div class="empty-state"><div class="icon">✅</div><h3>Kritik uyarı yok</h3><p>Tüm ölçümleriniz güvenli aralıkta.</p></div>';
+        }
+    }
+
+    // ==================== DASHBOARD ====================
+    function updateDashboard() {
+        if (entries.length === 0) {
+            document.getElementById('lastValue').textContent = '--';
+            document.getElementById('lastStatus').textContent = 'Henüz ölçüm yok';
+            document.getElementById('statAvg').textContent = '--';
+            document.getElementById('statMin').textContent = '--';
+            document.getElementById('statMax').textContent = '--';
+            document.getElementById('statTotal').textContent = '0';
+            document.getElementById('statInRange').textContent = '--%';
+            document.getElementById('stat7day').textContent = '--';
+            return;
+        }
+
+        const values = entries.map(e => e.value);
+        const latest = entries[0];
+        const status = getStatus(latest.value);
+
+        // Last value
+        document.getElementById('lastValue').textContent = latest.value;
+        document.getElementById('lastValue').style.color = status.color;
+        document.getElementById('lastStatus').textContent = status.label;
+        document.getElementById('lastStatus').style.color = status.color;
+
+        // Stats
+        const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const targetLow = settings.targetLow || 70;
+        const targetHigh = settings.targetHigh || 140;
+        const inRange = values.filter(v => v >= targetLow && v <= targetHigh).length;
+        const inRangePercent = Math.round((inRange / values.length) * 100);
+
+        document.getElementById('statAvg').textContent = avg;
+        document.getElementById('statMin').textContent = min;
+        document.getElementById('statMax').textContent = max;
+        document.getElementById('statTotal').textContent = entries.length;
+        document.getElementById('statInRange').textContent = inRangePercent + '%';
+
+        // 7 day average
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const last7Days = entries.filter(e => e.timestamp >= sevenDaysAgo);
+        if (last7Days.length > 0) {
+            const avg7 = Math.round(last7Days.map(e => e.value).reduce((a, b) => a + b, 0) / last7Days.length);
+            document.getElementById('stat7day').textContent = avg7;
+        } else {
+            document.getElementById('stat7day').textContent = '--';
+        }
+
+        // Alert banner on dashboard
+        const banner = document.getElementById('alertBanner');
+        if (latest.value > (settings.alertHigh || 200)) {
+            banner.innerHTML = `
+                <div class="alert-banner alert-danger pulse">
+                    <span>🚨</span>
+                    <div>
+                        <strong>Kritik Uyarı:</strong> Son ölçümünüz ${latest.value} mg/dL - Kritik yüksek seviye! 
+                        Lütfen önlem alın ve doktorunuza danışın.
+                    </div>
+                </div>
+            `;
+        } else if (latest.value < (settings.alertLow || 60)) {
+            banner.innerHTML = `
+                <div class="alert-banner alert-danger pulse">
+                    <span>🚨</span>
+                    <div>
+                        <strong>Acil Uyarı:</strong> Son ölçümünüz ${latest.value} mg/dL - Kritik düşük seviye! 
+                        Hemen 15-15 kuralını uygulayın!
+                    </div>
+                </div>
+            `;
+        } else if (latest.value > (settings.targetHigh || 140)) {
+            banner.innerHTML = `
+                <div class="alert-banner alert-warning">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>Dikkat:</strong> Son ölçümünüz ${latest.value} mg/dL - Hedef aralığın üzerinde.
+                    </div>
+                </div>
+            `;
+        } else if (latest.value >= (settings.targetLow || 70)) {
+            banner.innerHTML = `
+                <div class="alert-banner alert-success">
+                    <span>✅</span>
+                    <div>
+                        <strong>Son ölçüm normal aralıkta!</strong> ${latest.value} mg/dL - Hedef aralığındasınız.
+                    </div>
+                </div>
+            `;
+        }
+
+        renderRecentEntries();
+        updateCharts();
+    }
+
+    function renderRecentEntries() {
+        const container = document.getElementById('recentEntries');
+        const recent = entries.slice(0, 5);
+
+        if (recent.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>Henüz kayıt yok</p></div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih/Saat</th>
+                            <th>Değer</th>
+                            <th>Öğün</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${recent.map(e => `
+                            <tr>
+                                <td>${e.date} ${e.time}</td>
+                                <td><strong>${e.value}</strong> mg/dL</td>
+                                <td>${e.meal}</td>
+                                <td>${getBadgeHTML(e.value)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==================== CHARTS ====================
+    let trendChart, mealChart, weeklyBarChart, histogramChart;
+    let weeklyLineChart, weeklyMealChart;
+    let monthlyLineChart, monthlyTrendChart;
+
+    function updateCharts() {
+        updateTrendChart();
+        updateMealChart();
+        updateWeeklyBarChart();
+        updateHistogramChart();
+    }
+
+    function updateTrendChart() {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const targetLow = settings.targetLow || 70;
+        const targetHigh = settings.targetHigh || 140;
+
+        const last30 = entries.filter(e => {
+            const daysAgo = (Date.now() - e.timestamp) / (1000 * 60 * 60 * 24);
+            return daysAgo <= 30;
+        }).sort((a, b) => a.timestamp - b.timestamp);
+
+        if (trendChart) trendChart.destroy();
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last30.map(e => e.date + ' ' + e.time),
+                datasets: [{
+                    label: 'Kan Şekeri (mg/dL)',
+                    data: last30.map(e => e.value),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: last30.map(e => getStatus(e.value).color),
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    annotation: {}
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 10 }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'targetLines',
+                afterDraw(chart) {
+                    const ctx = chart.ctx;
+                    const yAxis = chart.scales.y;
+                    const xAxis = chart.scales.x;
+
+                    // Target high line
+                    const yHigh = yAxis.getPixelForValue(targetHigh);
+                    ctx.save();
+                    ctx.setLineDash([8, 4]);
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(xAxis.left, yHigh);
+                    ctx.lineTo(xAxis.right, yHigh);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Target low line
+                    const yLow = yAxis.getPixelForValue(targetLow);
+                    ctx.save();
+                    ctx.setLineDash([8, 4]);
+                    ctx.strokeStyle = '#16a34a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(xAxis.left, yLow);
+                    ctx.lineTo(xAxis.right, yLow);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Labels
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillText(`Hedef Üst: ${targetHigh}`, xAxis.right - 100, yHigh - 5);
+                    ctx.fillStyle = '#16a34a';
+                    ctx.fillText(`Hedef Alt: ${targetLow}`, xAxis.right - 100, yLow + 15);
+                }
+            }]
+        });
+    }
+
+    function updateMealChart() {
+        const ctx = document.getElementById('mealChart').getContext('2d');
+
+        const mealData = {};
+        entries.forEach(e => {
+            if (!mealData[e.meal]) mealData[e.meal] = [];
+            mealData[e.meal].push(e.value);
+        });
+
+        const mealLabels = Object.keys(mealData);
+        const mealAvgs = mealLabels.map(m => Math.round(mealData[m].reduce((a, b) => a + b, 0) / mealData[m].length));
+        const mealCounts = mealLabels.map(m => mealData[m].length);
+
+        if (mealChart) mealChart.destroy();
+
+        const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#f97316', '#6366f1', '#84cc16'];
+
+        mealChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: mealLabels,
+                datasets: [{
+                    label: 'Ortalama Şeker (mg/dL)',
+                    data: mealAvgs,
+                    backgroundColor: colors.slice(0, mealLabels.length),
+                    borderRadius: 8,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateWeeklyBarChart() {
+        const ctx = document.getElementById('weeklyBarChart').getContext('2d');
+
+        const last4Weeks = [];
+        for (let i = 0; i < 4; i++) {
+            const weekEnd = new Date();
+            weekEnd.setDate(weekEnd.getDate() - i * 7);
+            const weekStart = new Date(weekEnd);
+            weekStart.setDate(weekStart.getDate() - 6);
+
+            const weekEntries = entries.filter(e => {
+                const d = new Date(e.timestamp);
+                return d >= weekStart && d <= weekEnd;
+            });
+
+            if (weekEntries.length > 0) {
+                const avg = Math.round(weekEntries.map(e => e.value).reduce((a, b) => a + b, 0) / weekEntries.length);
+                last4Weeks.unshift({
+                    label: `Hafta ${4 - i}`,
+                    avg: avg,
+                    count: weekEntries.length
+                });
+            }
+        }
+
+        if (weeklyBarChart) weeklyBarChart.destroy();
+
+        weeklyBarChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: last4Weeks.map(w => w.label),
+                datasets: [{
+                    label: 'Haftalık Ortalama',
+                    data: last4Weeks.map(w => w.avg),
+                    backgroundColor: last4Weeks.map(w => {
+                        if (w.avg <= 140) return '#16a34a';
+                        if (w.avg <= 200) return '#f59e0b';
+                        return '#dc2626';
+                    }),
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateHistogramChart() {
+        const ctx = document.getElementById('histogramChart').getContext('2d');
+
+        const ranges = {
+            '< 60': 0,
+            '60-80': 0,
+            '80-100': 0,
+            '100-120': 0,
+            '120-140': 0,
+            '140-180': 0,
+            '180-200': 0,
+            '200-250': 0,
+            '> 250': 0
+        };
+
+        entries.forEach(e => {
+            const v = e.value;
+            if (v < 60) ranges['< 60']++;
+            else if (v < 80) ranges['60-80']++;
+            else if (v < 100) ranges['80-100']++;
+            else if (v < 120) ranges['100-120']++;
+            else if (v < 140) ranges['120-140']++;
+            else if (v < 180) ranges['140-180']++;
+            else if (v < 200) ranges['180-200']++;
+            else if (v < 250) ranges['200-250']++;
+            else ranges['> 250']++;
+        });
+
+        const labels = Object.keys(ranges);
+        const data = Object.values(ranges);
+        const colors = data.map((v, i) => {
+            if (i < 2) return '#3b82f6';
+            if (i < 5) return '#16a34a';
+            if (i < 7) return '#f59e0b';
+            return '#dc2626';
+        });
+
+        if (histogramChart) histogramChart.destroy();
+
+        histogramChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ölçüm Sayısı',
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // ==================== WEEKLY VIEW ====================
+    function changeWeek(offset) {
+        currentWeekOffset += offset;
+        renderWeekly();
+    }
+
+    function renderWeekly() {
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay() + 1 + currentWeekOffset * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        document.getElementById('weekRange').textContent =
+            `${weekStart.toLocaleDateString('tr-TR')} - ${weekEnd.toLocaleDateString('tr-TR')}`;
+
+        const weekEntries = entries.filter(e => {
+            const d = new Date(e.timestamp);
+            return d >= weekStart && d <= weekEnd;
+        }).sort((a, b) => a.timestamp - b.timestamp);
+
+        // Stats
+        const statsContainer = document.getElementById('weeklyStats');
+        if (weekEntries.length === 0) {
+            statsContainer.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>Bu hafta için ölçüm yok</p></div>';
+        } else {
+            const values = weekEntries.map(e => e.value);
+            const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const inRange = values.filter(v => v >= (settings.targetLow || 70) && v <= (settings.targetHigh || 140)).length;
+            const inRangePercent = Math.round((inRange / values.length) * 100);
+
+            statsContainer.innerHTML = `
+                <div class="stat-card success">
+                    <div class="stat-label">Haftalık Ortalama</div>
+                    <div class="stat-value">${avg}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">En Düşük</div>
+                    <div class="stat-value">${min}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-label">En Yüksek</div>
+                    <div class="stat-value">${max}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Hedef İçinde</div>
+                    <div class="stat-value">${inRangePercent}%</div>
+                    <div class="stat-sub">${inRange}/${values.length} ölçüm</div>
+                </div>
+            `;
+        }
+
+        // Weekly line chart
+        const ctx = document.getElementById('weeklyLineChart').getContext('2d');
+        if (weeklyLineChart) weeklyLineChart.destroy();
+
+        const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+        const dailyAvgs = days.map((_, i) => {
+            const dayEntries = weekEntries.filter(e => {
+                const d = new Date(e.timestamp);
+                return d.getDay() === (i + 1) % 7;
+            });
+            if (dayEntries.length === 0) return null;
+            return Math.round(dayEntries.map(e => e.value).reduce((a, b) => a + b, 0) / dayEntries.length);
+        });
+
+        weeklyLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Günlük Ortalama',
+                    data: dailyAvgs,
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'rgba(124,58,237,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#7c3aed',
+                    spanGaps: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Weekly meal chart
+        const mealCtx = document.getElementById('weeklyMealChart').getContext('2d');
+        if (weeklyMealChart) weeklyMealChart.destroy();
+
+        const mealAvgs = {};
+        weekEntries.forEach(e => {
+            if (!mealAvgs[e.meal]) mealAvgs[e.meal] = [];
+            mealAvgs[e.meal].push(e.value);
+        });
+
+        const mLabels = Object.keys(mealAvgs);
+        const mAvgs = mLabels.map(m => Math.round(mealAvgs[m].reduce((a, b) => a + b, 0) / mealAvgs[m].length));
+
+        weeklyMealChart = new Chart(mealCtx, {
+            type: 'bar',
+            data: {
+                labels: mLabels,
+                datasets: [{
+                    label: 'Ortalama',
+                    data: mAvgs,
+                    backgroundColor: '#10b981',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // ==================== MONTHLY VIEW ====================
+    function changeMonth(offset) {
+        currentMonthOffset += offset;
+        renderMonthly();
+    }
+
+    function renderMonthly() {
+        const today = new Date();
+        const monthStart = new Date(today.getFullYear(), today.getMonth() + currentMonthOffset, 1);
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + currentMonthOffset + 1, 0, 23, 59, 59);
+
+        document.getElementById('monthRange').textContent =
+            `${monthStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}`;
+
+        const monthEntries = entries.filter(e => {
+            const d = new Date(e.timestamp);
+            return d >= monthStart && d <= monthEnd;
+        }).sort((a, b) => a.timestamp - b.timestamp);
+
+        const statsContainer = document.getElementById('monthlyStats');
+        if (monthEntries.length === 0) {
+            statsContainer.innerHTML = '<div class="empty-state"><div class="icon">🗓️</div><p>Bu ay için ölçüm yok</p></div>';
+        } else {
+            const values = monthEntries.map(e => e.value);
+            const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const inRange = values.filter(v => v >= (settings.targetLow || 70) && v <= (settings.targetHigh || 140)).length;
+            const inRangePercent = Math.round((inRange / values.length) * 100);
+
+            // A1C estimate
+            const estimatedA1C = ((avg + 46.7) / 28.7).toFixed(1);
+
+            statsContainer.innerHTML = `
+                <div class="stat-card success">
+                    <div class="stat-label">Aylık Ortalama</div>
+                    <div class="stat-value">${avg}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">En Düşük</div>
+                    <div class="stat-value">${min}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-label">En Yüksek</div>
+                    <div class="stat-value">${max}</div>
+                    <div class="stat-sub">mg/dL</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Hedef İçinde</div>
+                    <div class="stat-value">${inRangePercent}%</div>
+                    <div class="stat-sub">${inRange}/${values.length} ölçüm</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Tahmini HbA1c</div>
+                    <div class="stat-value">${estimatedA1C}%</div>
+                    <div class="stat-sub">ortalama bazlı</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-label">Toplam Ölçüm</div>
+                    <div class="stat-value">${monthEntries.length}</div>
+                    <div class="stat-sub">kayıt</div>
+                </div>
+            `;
+        }
+
+        // Monthly line chart
+        const ctx = document.getElementById('monthlyLineChart').getContext('2d');
+        if (monthlyLineChart) monthlyLineChart.destroy();
+
+        const dailyData = {};
+        monthEntries.forEach(e => {
+            if (!dailyData[e.date]) dailyData[e.date] = [];
+            dailyData[e.date].push(e.value);
+        });
+
+        const sortedDates = Object.keys(dailyData).sort();
+        const dailyAvgs = sortedDates.map(d => Math.round(dailyData[d].reduce((a, b) => a + b, 0) / dailyData[d].length));
+
+        monthlyLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Günlük Ortalama',
+                    data: dailyAvgs,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 15, font: { size: 10 } } }
+                }
+            }
+        });
+
+        // Monthly trend with target lines
+        const ctx2 = document.getElementById('monthlyTrendChart').getContext('2d');
+        if (monthlyTrendChart) monthlyTrendChart.destroy();
+
+        const targetLow = settings.targetLow || 70;
+        const targetHigh = settings.targetHigh || 140;
+
+        monthlyTrendChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Günlük Ortalama',
+                    data: dailyAvgs,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37,99,235,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: dailyAvgs.map(v => {
+                        if (v >= targetLow && v <= targetHigh) return '#16a34a';
+                        if (v > targetHigh) return '#f59e0b';
+                        return '#2563eb';
+                    })
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 15, font: { size: 10 } } }
+                }
+            },
+            plugins: [{
+                id: 'targetLines',
+                afterDraw(chart) {
+                    const ctx = chart.ctx;
+                    const yAxis = chart.scales.y;
+                    const xAxis = chart.scales.x;
+
+                    [targetHigh, targetLow].forEach((val, i) => {
+                        const y = yAxis.getPixelForValue(val);
+                        ctx.save();
+                        ctx.setLineDash([6, 4]);
+                        ctx.strokeStyle = i === 0 ? '#f59e0b' : '#16a34a';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(xAxis.left, y);
+                        ctx.lineTo(xAxis.right, y);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.font = 'bold 11px sans-serif';
+                        ctx.fillStyle = i === 0 ? '#f59e0b' : '#16a34a';
+                        ctx.fillText(`${val}`, xAxis.right - 30, y - 5);
+                    });
+                }
+            }]
+        });
+    }
+
+    // ==================== HISTORY ====================
+    function renderHistory() {
+        const tbody = document.getElementById('historyTable');
+        const empty = document.getElementById('historyEmpty');
+
+        if (entries.length === 0) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        tbody.innerHTML = entries.map(e => `
+            <tr>
+                <td>${e.date}<br><small style="color:#94a3b8">${e.time}</small></td>
+                <td><strong style="color: ${getStatus(e.value).color}">${e.value}</strong></td>
+                <td>${e.meal}</td>
+                <td>${e.medication}</td>
+                <td>${e.exercise}</td>
+                <td>${getBadgeHTML(e.value)}</td>
+                <td>${e.note || '-'}</td>
+                <td><button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteEntry(${e.id})">🗑️</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function filterHistory() {
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        const meal = document.getElementById('filterMeal').value;
+
+        let filtered = [...entries];
+
+        if (start) filtered = filtered.filter(e => e.date >= start);
+        if (end) filtered = filtered.filter(e => e.date <= end);
+        if (meal) filtered = filtered.filter(e => e.meal === meal);
+
+        const tbody = document.getElementById('historyTable');
+        tbody.innerHTML = filtered.map(e => `
+            <tr>
+                <td>${e.date}<br><small style="color:#94a3b8">${e.time}</small></td>
+                <td><strong style="color: ${getStatus(e.value).color}">${e.value}</strong></td>
+                <td>${e.meal}</td>
+                <td>${e.medication}</td>
+                <td>${e.exercise}</td>
+                <td>${getBadgeHTML(e.value)}</td>
+                <td>${e.note || '-'}</td>
+                <td><button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteEntry(${e.id})">🗑️</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function clearFilter() {
+        document.getElementById('filterStart').value = '';
+        document.getElementById('filterEnd').value = '';
+        document.getElementById('filterMeal').value = '';
+        renderHistory();
+    }
+
+    // ==================== TIPS ====================
+    function renderTips() {
+        const tipsContainer = document.getElementById('tipsContainer');
+        tipsContainer.innerHTML = `
+            <div class="tip-card">
+                <div class="tip-icon">🍎</div>
+                <div>
+                    <div class="tip-title">Beslenme Önerileri</div>
+                    <div class="tip-text">
+                        • Kompleks karbonhidratları tercih edin (tam tahıllar, baklagiller)<br>
+                        • Lifli besinler kan şekerini dengelemeye yardımcı olur<br>
+                        • Porsiyon kontrolü çok önemlidir<br>
+                        • Şekerli içeceklerden kaçının<br>
+                        • Düzenli öğün atlamayın<br>
+                        • Glisemik indeksi düşük besinler tercih edin
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">🏃</div>
+                <div>
+                    <div class="tip-title">Egzersiz Önerileri</div>
+                    <div class="tip-text">
+                        • Haftada en az 150 dakika orta tempolu egzersiz yapın<br>
+                        • Yemek sonrası 15-30 dakika yürüyüş kan şekerini düşürür<br>
+                        • Egzersiz öncesi kan şekerinizi kontrol edin<br>
+                        • Hipoglisemi riskine karşı yanınızda şeker bulundurun<br>
+                        • Düzenli egzersiz insülin duyarlılığını artırır
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">💧</div>
+                <div>
+                    <div class="tip-title">Su Tüketimi</div>
+                    <div class="tip-text">
+                        • Günde en az 2-3 litre su için<br>
+                        • Yeterli su tüketimi böbrek fonksiyonlarını destekler<br>
+                        • Yüksek kan şekerinde su içmek şekerin atılmasına yardımcı olur
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">😴</div>
+                <div>
+                    <div class="tip-title">Uyku ve Stres Yönetimi</div>
+                    <div class="tip-text">
+                        • 7-8 saat kaliteli uyuyun<br>
+                        • Stres kan şekerini yükseltebilir<br>
+                        • Meditasyon ve nefes egzersizleri yapın<br>
+                        • Düzenli uyku saati belirleyin
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card">
+                <div class="tip-icon">🩸</div>
+                <div>
+                    <div class="tip-title">Ölçüm Önerileri</div>
+                    <div class="tip-text">
+                        • Açlık kan şekeri: Sabah kahvaltıdan önce ölçün<br>
+                        • Tokluk kan şekeri: Yemekten 2 saat sonra ölçün<br>
+                        • Aynı saatlerde ölçüm yapın (tutarlılık için)<br>
+                        • Ellerinizi yıkayıp kurulayın ölçümden önce<br>
+                        • Test çubuklarının son kullanma tarihini kontrol edin<br>
+                        • Cihazınızı düzenli kalibre edin
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Doctor tips
+        document.getElementById('doctorTips').innerHTML = `
+            <div class="tip-card" style="background: #fef2f2; border-color: #fecaca;">
+                <div class="tip-icon">🚨</div>
+                <div>
+                    <div class="tip-title">Acil Durumlar - Hemen Doktora Başvurun</div>
+                    <div class="tip-text">
+                        • Kan şekeri <strong>400 mg/dL</strong> üzerindeyse<br>
+                        • Kan şekeri <strong>50 mg/dL</strong> altındaysa ve düzelmiyorsa<br>
+                        • Ketozis belirtileri (nefeste meyve kokusu, mide bulantısı)<br>
+                        • Bilinç bulanıklığı veya bayılma<br>
+                        • Şiddetli karın ağrısı<br>
+                        • Nefes almada zorluk
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card" style="background: #fffbeb; border-color: #fde68a;">
+                <div class="tip-icon">📅</div>
+                <div>
+                    <div class="tip-title">Rutin Kontroller</div>
+                    <div class="tip-text">
+                        • 3 ayda bir HbA1c testi yaptırın<br>
+                        • Yılda en az 1 kez göz muayenesi<br>
+                        • Yılda en az 1 kez ayak muayenesi<br>
+                        • 6 ayda bir böbrek fonksiyon testi<br>
+                        • Düzenli lipid profili kontrolü<br>
+                        • Kan basıncı takibi yapın
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Internet tips
+        document.getElementById('internetTips').innerHTML = `
+            <div class="tip-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                <div class="tip-icon">🌐</div>
+                <div>
+                    <div class="tip-title">İnternet ile Yapabilecekleriniz</div>
+                    <div class="tip-text">
+                        • <strong>Online Doktor Görüşmesi:</strong> Tele-tıp platformları ile uzaktan konsültasyon<br>
+                        • <strong>Sağlık Uygulamaları:</strong> Verilerinizi buluta yedekleyin ve doktorunuzla paylaşın<br>
+                        • <strong>E-Reçete:</strong> İlaçlarınızı online olarak yenileyin<br>
+                        • <strong>Sağlık Portalı:</strong> e-Nabız üzerinden sağlık verilerinize ulaşın<br>
+                        • <strong>Online Destek Grupları:</strong> Diyabet hasta gruplarına katılın<br>
+                        • <strong>Beslenme Takip:</strong> Online beslenme uygulamaları ile karbonhidrat sayımı<br>
+                        • <strong>Akıllı Cihazlar:</strong> Bluetooth glükometreler ile otomatik veri aktarımı<br>
+                        • <strong>Eğitim:</strong> Online diyabet eğitim programlarına katılın
+                    </div>
+                </div>
+            </div>
+            <div class="tip-card" style="background: #eff6ff; border-color: #bfdbfe;">
+                <div class="tip-icon">📱</div>
+                <div>
+                    <div class="tip-title">Dijital Sağlık Araçları</div>
+                    <div class="tip-text">
+                        • <strong>CGM (Sürekli Glükoz Monitörü):</strong> Sensör ile 7/24 takip<br>
+                        • <strong>İnsülin Pompası:</strong> Akıllı insülin dağıtım sistemleri<br>
+                        • <strong>Mobil Uygulamalar:</strong> Karbonhidrat sayımı ve doz hesaplayıcı<br>
+                        • <strong>Akıllı Saatler:</strong> Kalp atışı ve aktivite takibi<br>
+                        • <strong>Bulut Senkronizasyonu:</strong> Verilerinizi her yerden erişilebilir yapın
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ==================== SETTINGS ====================
+    function loadSettings() {
+        if (settings.patientName) document.getElementById('patientName').value = settings.patientName;
+        if (settings.patientAge) document.getElementById('patientAge').value = settings.patientAge;
+        if (settings.diabetesType) document.getElementById('diabetesType').value = settings.diabetesType;
+        if (settings.targetLow) document.getElementById('targetLow').value = settings.targetLow;
+        if (settings.targetHigh) document.getElementById('targetHigh').value = settings.targetHigh;
+        if (settings.alertLow) document.getElementById('alertLow').value = settings.alertLow;
+        if (settings.alertHigh) document.getElementById('alertHigh').value = settings.alertHigh;
+    }
+
+    function saveSettings() {
+        settings = {
+            patientName: document.getElementById('patientName').value,
+            patientAge: document.getElementById('patientAge').value,
+            diabetesType: document.getElementById('diabetesType').value,
+            targetLow: parseInt(document.getElementById('targetLow').value) || 70,
+            targetHigh: parseInt(document.getElementById('targetHigh').value) || 140,
+            alertLow: parseInt(document.getElementById('alertLow').value) || 60,
+            alertHigh: parseInt(document.getElementById('alertHigh').value) || 200
+        };
+        saveSettingsData();
+        updateDashboard();
+        renderAlerts();
+        showModal('✅ Ayarlar Kaydedildi', 'Kişisel ayarlarınız başarıyla kaydedildi. Dashboard ve uyarılar yeni ayarlarla güncellendi.');
+    }
+
+    // ==================== EXPORT/IMPORT ====================
+    function exportData() {
+        const data = {
+            entries: entries,
+            settings: settings,
+            exportDate: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kan_sekeri_yedek_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.entries) {
+                    entries = data.entries;
+                    saveData();
+                }
+                if (data.settings) {
+                    settings = data.settings;
+                    saveSettingsData();
+                    loadSettings();
+                }
+                updateDashboard();
+                renderHistory();
+                renderWeekly();
+                renderMonthly();
+                renderAlerts();
+                showModal('✅ İçe Aktarma Başarılı', `
+                    ${data.entries ? data.entries.length + ' kayıt içe aktarıldı.<br>' : ''}
+                    ${data.settings ? 'Ayarlar güncellendi.<br>' : ''}
+                    Tüm veriler yenilendi.
+                `);
+            } catch (err) {
+                showModal('❌ Hata', 'Dosya okunamadı. Lütfen geçerli bir JSON dosyası seçin.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportCSV() {
+        if (entries.length === 0) {
+            showModal('⚠️ Veri Yok', 'Dışa aktarılacak veri bulunmuyor.');
+            return;
+        }
+
+        let csv = 'Tarih,Saat,Kan Sekeri (mg/dL),Ogun,Ilac,Egzersiz,Not,Durum\n';
+        entries.forEach(e => {
+            csv += `${e.date},${e.time},${e.value},${e.meal},${e.medication},${e.exercise},"${e.note || ''}",${getStatus(e.value).label}\n`;
+        });
+
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kan_sekeri_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function clearAllData() {
+        if (confirm('⚠️ TÜM VERİLER SİLİNECEK! Emin misiniz?')) {
+            if (confirm('Bu işlem geri alınamaz. Devam etmek istiyor musunuz?')) {
+                entries = [];
+                saveData();
+                updateDashboard();
+                renderHistory();
+                renderWeekly();
+                renderMonthly();
+                renderAlerts();
+                showModal('🗑️ Veriler Silindi', 'Tüm ölçüm kayıtları silindi.');
+            }
+        }
+    }
+
+    // ==================== PRINT ====================
+    function printReport() {
+        window.print();
+    }
+
+    // ==================== UI HELPERS ====================
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+        document.getElementById('tab-' + tabName).classList.add('active');
+        event.target.classList.add('active');
+
+        // Refresh charts when switching to dashboard
+        if (tabName === 'dashboard') updateCharts();
+        if (tabName === 'weekly') renderWeekly();
+        if (tabName === 'monthly') renderMonthly();
+        if (tabName === 'alerts') renderAlerts();
+    }
+
+    function showModal(title, content) {
+        document.getElementById('modalTitle').innerHTML = title;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('alertModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('alertModal').classList.remove('active');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('alertModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+        if (e.ctrlKey && e.key === 'Enter') addEntry();
+    });
+</script>
+
+</body>
+</html>
